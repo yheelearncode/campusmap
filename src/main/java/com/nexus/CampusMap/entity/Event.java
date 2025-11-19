@@ -45,6 +45,8 @@ public class Event {
 
     @Column
     private Integer likes = 0;
+    
+    private Long authorId;
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -79,4 +81,7 @@ public class Event {
 
     public Integer getLikes() { return likes; }
     public void setLikes(Integer likes) { this.likes = likes; }
+    
+    public Long getAuthorId() { return authorId; }
+    public void setAuthorId(Long authorId) { this.authorId = authorId; }
 }
