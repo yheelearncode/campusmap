@@ -220,7 +220,6 @@ export default function CampusMap() {
         events.forEach((ev) => {
           const position = new window.kakao.maps.LatLng(ev.lat, ev.lon);
 
-          // onclick은 절대 style 안에 넣으면 안 됨!!
           const content = `
             <div class="campus-marker"
               style="

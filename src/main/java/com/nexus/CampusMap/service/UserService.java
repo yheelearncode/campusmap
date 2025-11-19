@@ -17,20 +17,19 @@ public class UserService {
     private UserRepository userRepository;
     
     public User registerUser(User user) {
-        // 1️⃣ 중복 이메일 확인
+        
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
         }
         
-        // 2️⃣ 중복 사용자명 확인
+        
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new IllegalArgumentException("이미 존재하는 사용자명입니다.");
         }
 
-        // 3️⃣ (선택) 비밀번호 암호화
-        // user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
 
-        // 4️⃣ DB에 저장
+        
         return userRepository.save(user);
     }
     

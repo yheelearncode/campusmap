@@ -1,33 +1,37 @@
 package com.nexus.CampusMap.controller;
 
-import com.nexus.CampusMap.entity.Event;
-import com.nexus.CampusMap.service.EventService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.nexus.CampusMap.entity.Event;
+import com.nexus.CampusMap.service.EventService;
+
 @RestController
 @RequestMapping("/api/events")
-// @CrossOrigin(origins = "*", allowedHeaders = "*") ← 제거!
 public class EventController {
     
     @Autowired
     private EventService eventService;
 
-    // 모든 이벤트 조회
     @GetMapping
     public ResponseEntity<List<Event>> getAllEvents() {
         return ResponseEntity.ok(eventService.getAllEvents());
     }
 
-    // 이벤트 생성 (FormData로 받음)
     @PostMapping
     public ResponseEntity<?> createEvent(
             @RequestParam("title") String title,
