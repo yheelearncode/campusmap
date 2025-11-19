@@ -3,15 +3,19 @@ package com.nexus.CampusMap.service;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.nexus.CampusMap.entity.User;
 import com.nexus.CampusMap.repository.UserRepository;
 
 @Service
 @Transactional
-public class UserService {
+public class UserService implements UserDetailsService {
     
     @Autowired
     private UserRepository userRepository;
@@ -51,4 +55,30 @@ public class UserService {
         
         return user;
     }
+
+    public Long getUserIdByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                              .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        
+        return user.getId();
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        
+        // 1. UserRepository를 사용해 DB에서 사용자 찾기
+        com.nexus.CampusMap.entity.User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+
+        // 2. DB에서 찾은 사용자 정보로 Spring Security용 UserDetails 객체 생성
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword()) // 암호화된 비밀번호
+                
+                // 3. 사용자의 역할을 권한 목록으로 변환하여 추가
+                .roles(user.getRole())
+                
+                .build();
+    }
+
 }
