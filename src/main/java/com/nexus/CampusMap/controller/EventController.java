@@ -92,28 +92,24 @@ public class EventController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteEvent(@PathVariable Long id) {
         try {
-            // -------------------------------------------------------------
-            // 2. 현재 로그인된 사용자 ID 획득 로직 (Create 메서드와 동일)
+            // 현재 로그인된 사용자 ID 획득 로직
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
             Long currentUserId = userService.getUserIdByUsername(currentUsername);
         
-            // 3. eventService 호출 시 currentUserId 전달
-            // (EventService의 메서드 시그니처를 수정해야 함)
-            eventService.deleteEvent(id, currentUserId); // 👈 ID 전달하도록 수정
-            // -------------------------------------------------------------
+            eventService.deleteEvent(id, currentUserId); 
         
             Map<String, String> response = new HashMap<>();
             response.put("message", "이벤트 삭제 성공");
             return ResponseEntity.ok(response);
         
-        // 4. catch 블록: 권한 없음 예외 처리
+        // 권한 없음 예외 처리
         } catch (AccessDeniedException e) {
-            // 권한이 없는 경우, HTTP 403 Forbidden 상태 코드를 반환합니다.
+            // 권한이 없는 경우, HTTP 403 Forbidden 상태 코드를 반환
             Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage()); // 서비스에서 던진 오류 메시지를 포함
+            error.put("error", e.getMessage()); 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         
-        // 5. catch 블록: 그 외 예외 처리 (예: 이벤트가 존재하지 않는 경우)
+        // 그 외 예외 처리 (예: 이벤트가 존재하지 않는 경우)
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "이벤트 삭제 실패: " + e.getMessage());
@@ -130,7 +126,7 @@ public class EventController {
             Long currentUserId = userService.getUserIdByUsername(currentUsername);
         
             // 획득한 ID를 서비스로 전달
-            Event updatedEvent = eventService.updateEvent(id, event, currentUserId); // 👈 currentUserId 추가!
+            Event updatedEvent = eventService.updateEvent(id, event, currentUserId); 
         
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이벤트 수정 성공");

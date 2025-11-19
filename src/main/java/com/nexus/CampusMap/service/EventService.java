@@ -92,29 +92,28 @@ public class EventService {
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
     
-        // 2. 🔑 **소유자 검증 (핵심 로직)**
+        // 2. 소유자 검증
         if (!existingEvent.getAuthorId().equals(currentUserId)) {
             // 작성자 ID와 현재 사용자 ID가 다르면 접근 거부 예외 발생
             throw new AccessDeniedException("You are not authorized to update this event. Only the author can modify it.");
         }
     
-        // 3. 검증 통과: 이제 업데이트 진행
+        // 3. 검증 통과: 업데이트 진행
         existingEvent.setTitle(updatedEvent.getTitle());
         existingEvent.setDescription(updatedEvent.getDescription());
         existingEvent.setLat(updatedEvent.getLat());
         existingEvent.setLon(updatedEvent.getLon());
-        // ... (필요한 다른 필드들도 업데이트)
 
         return eventRepository.save(existingEvent);
     }
 
     // 이벤트를 삭제하는 메서드
-    public void deleteEvent(Long eventId, Long currentUserId) { // 👈 currentUserId 매개변수 추가
+    public void deleteEvent(Long eventId, Long currentUserId) { 
         // 1. 삭제할 이벤트가 존재하는지 확인
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
-        // 2. 🔑 **소유자 검증 (핵심 로직)**
+        // 2. 소유자 검증
         if (!existingEvent.getAuthorId().equals(currentUserId)) {
             // 작성자 ID와 현재 사용자 ID가 다르면 접근 거부 예외 발생
             throw new AccessDeniedException("You are not authorized to delete this event. Only the author can delete it.");
