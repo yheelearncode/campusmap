@@ -26,6 +26,7 @@ public class UserController {
             user.setEmail(request.getEmail());
             user.setPassword(request.getPassword());
             user.setUsername(request.getUsername());
+            user.setLanguage(request.getLanguage());
             
             User savedUser = userService.registerUser(user);
             
@@ -55,6 +56,7 @@ public class UserController {
             response.put("token", "temp-token-" + user.getId());
             response.put("userId", user.getId());
             response.put("username", user.getUsername());
+            response.put("language", user.getLanguage());
             
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

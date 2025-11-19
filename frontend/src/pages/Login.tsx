@@ -7,17 +7,18 @@ export default function Login() {
     email: '',
     password: '',
     name: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    language: 'ko',
   });
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isLogin) {
       // 로그인
       try {
@@ -26,12 +27,14 @@ export default function Login() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: form.email, password: form.password })
         });
-        
+
         const data = await res.json();
-        
+
         if (res.ok) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('userId', data.userId);
+          localStorage.setItem('username', data.username);
+          localStorage.setItem('language', data.language);
           alert('로그인 성공!');
           navigate('/map');
         } else {
@@ -47,24 +50,25 @@ export default function Login() {
         alert('비밀번호가 일치하지 않습니다.');
         return;
       }
-      
+
       try {
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: form.email, 
+          body: JSON.stringify({
+            email: form.email,
             password: form.password,
-            username: form.name 
+            username: form.name,
+            language: form.language
           })
         });
-        
+
         const data = await res.json();
-        
+
         if (res.ok) {
           alert('회원가입 성공! 로그인해주세요.');
           setIsLogin(true);
-          setForm({ email: '', password: '', name: '', confirmPassword: '' });
+          setForm({ email: '', password: '', name: '', language: '', confirmPassword: '' });
         } else {
           alert(data.error || '회원가입 실패');
         }
@@ -101,15 +105,15 @@ export default function Login() {
         }}>
           {isLogin ? '🔐 로그인' : '✨ 회원가입'}
         </h2>
-        
+
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div style={{ marginBottom: 16 }}>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: 8, 
-                fontWeight: '500', 
-                color: '#555' 
+              <label style={{
+                display: 'block',
+                marginBottom: 8,
+                fontWeight: '500',
+                color: '#555'
               }}>
                 이름
               </label>
@@ -131,13 +135,43 @@ export default function Login() {
               />
             </div>
           )}
-          
+
+          {!isLogin && (<div style={{ marginBottom: 16 }}>
+              <label style={{
+                display: 'block',
+                marginBottom: 8,
+                fontWeight: '500',
+                color: '#555'
+              }}>
+                언어
+              </label>
+              <select
+                name="language"
+                value={form.language}
+                onChange={handleChange}
+                required={!isLogin}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="mn">Монгол</option>
+              </select>
+            </div>
+          )}
+
           <div style={{ marginBottom: 16 }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: 8, 
-              fontWeight: '500', 
-              color: '#555' 
+            <label style={{
+              display: 'block',
+              marginBottom: 8,
+              fontWeight: '500',
+              color: '#555'
             }}>
               이메일
             </label>
@@ -158,13 +192,13 @@ export default function Login() {
               }}
             />
           </div>
-          
+
           <div style={{ marginBottom: 16 }}>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: 8, 
-              fontWeight: '500', 
-              color: '#555' 
+            <label style={{
+              display: 'block',
+              marginBottom: 8,
+              fontWeight: '500',
+              color: '#555'
             }}>
               비밀번호
             </label>
@@ -185,14 +219,14 @@ export default function Login() {
               }}
             />
           </div>
-          
+
           {!isLogin && (
             <div style={{ marginBottom: 24 }}>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: 8, 
-                fontWeight: '500', 
-                color: '#555' 
+              <label style={{
+                display: 'block',
+                marginBottom: 8,
+                fontWeight: '500',
+                color: '#555'
               }}>
                 비밀번호 확인
               </label>
@@ -214,7 +248,7 @@ export default function Login() {
               />
             </div>
           )}
-          
+
           <button
             type="submit"
             style={{
@@ -233,13 +267,13 @@ export default function Login() {
             {isLogin ? '로그인' : '회원가입'}
           </button>
         </form>
-        
+
         <div style={{ textAlign: 'center', fontSize: '14px', color: '#666' }}>
           {isLogin ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}
           <button
             onClick={() => {
               setIsLogin(!isLogin);
-              setForm({ email: '', password: '', name: '', confirmPassword: '' });
+              setForm({ email: '', password: '', name: '', language: '', confirmPassword: '' });
             }}
             style={{
               marginLeft: '8px',

@@ -37,6 +37,8 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'mysql:mysql-connector-java:8.0.33'
+	
+	implementation 'com.google.cloud:google-cloud-translate:2.77.0'
 }
 
 tasks.named('test') {

@@ -25,6 +25,10 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String email;
+    
+    // 2자리 언어 코드 (혹시 모르니까 일단 4로 해 둠)
+    @Column(length = 4)
+    private String language;
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -43,6 +47,9 @@ public class User {
     
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -24,6 +24,79 @@ interface EventDetail {
   imageUrl?: string;
 }
 
+// 기본 UI 언어
+const ui_translations = {
+  ko: {
+    main: {
+      title: "캠퍼스 이벤트 지도",
+      add_event: "이벤트 추가",
+      add_guide: "지도에서 이벤트 위치를 클릭하세요",
+      logout: "로그아웃",
+      logout_check: "로그아웃 하시겠습니까?",
+      cancel: "취소",
+    },
+    add: {
+      title: "이벤트 등록",
+      title_placeholder: "제목 *",
+      description_placeholder: "내용 *",
+      post: "등록",
+      cancel: "취소",
+      success: "등록 완료!",
+      fail: "등록 실패"
+    },
+    detail: {
+      likes: "추천",
+      close: "닫기",
+    }
+  },
+  en: {
+    main: {
+      title: "Campus Event Map",
+      add_event: "Add Event",
+      add_guide: "Click the event location on the map",
+      logout: "Logout",
+      logout_check: "Logout?",
+      cancel: "Cancel",
+    },
+    add: {
+      title: "Post Event",
+      title_placeholder: "Title *",
+      description_placeholder: "Description *",
+      post: "Post",
+      cancel: "Cancel",
+      success: "Post Done!",
+      fail: "Post Failed"
+    },
+    detail: {
+      likes: "Likes",
+      close: "Close",
+    }
+  },
+  mn: {
+    main: {
+      title: "캠퍼스 이벤트 지도(mn)",
+      add_event: "이벤트 추가(mn)",
+      add_guide: "지도에서 이벤트 위치를 클릭하세요(mn)",
+      logout: "로그아웃(mn)",
+      logout_check: "로그아웃 하시겠습니까?(mn)",
+      cancel: "취소(mn)",
+    },
+    add: {
+      title: "이벤트 등록(mn)",
+      title_placeholder: "제목 *(mn)",
+      description_placeholder: "내용 *(mn)",
+      post: "등록(mn)",
+      cancel: "취소(mn)",
+      success: "등록 완료!(mn)",
+      fail: "등록 실패(mn)"
+    },
+    detail: {
+      likes: "추천(mn)",
+      close: "닫기(mn)",
+    }
+  }
+}
+
 export default function CampusMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const [showForm, setShowForm] = useState(false);
@@ -39,12 +112,19 @@ export default function CampusMap() {
   const [eventDetails, setEventDetails] = useState<EventDetail | null>(null);
   const [comment, setComment] = useState("");
 
+  const [translatedTitle, setTranslatedTitle] = useState("");
+  const [translatedDescription, setTranslatedDescription] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const userLang = (localStorage.getItem('language') as 'ko' | 'en' | 'mn') || 'ko';
+  const t = ui_translations[userLang];
+
   // 로그아웃 함수
   const handleLogout = () => {
-    if (confirm("로그아웃 하시겠습니까?")) {
+    if (confirm(t.main.logout_check)) {
       localStorage.removeItem("token");
       localStorage.removeItem("userId");
-      localStorage.removeItem("userName");
+      localStorage.removeItem("username");
       window.location.href = "/login";
     }
   };
@@ -58,6 +138,34 @@ export default function CampusMap() {
       }
     };
   }, [eventList]);
+
+  useEffect(() => {
+    if (eventDetails && eventDetails.description) {
+      setIsTranslating(true);
+      setTranslatedTitle("");
+      setTranslatedDescription("");
+      fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: eventDetails.title,
+          description: eventDetails.description,
+          targetLang: userLang,
+        }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.translatedTitle) {
+          setTranslatedTitle(data.translatedTitle);
+        }
+        if (data.translatedDescription) {
+          setTranslatedDescription(data.translatedDescription);
+        }
+      })
+      .catch(err => console.error("번역 실패: ", err))
+      .finally(() => setIsTranslating(false));
+    }
+  }, [eventDetails, userLang]);
 
   // 지도 초기화
   useEffect(() => {
@@ -254,7 +362,7 @@ export default function CampusMap() {
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <h2 style={{ margin: 0 }}>캠퍼스 이벤트 지도</h2>
+        <h2 style={{ margin: 0 }}>{t.main.title}</h2>
 
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
           <button
@@ -269,10 +377,10 @@ export default function CampusMap() {
               color: "white",
             }}
           >
-            {isAddMode ? "취소" : "이벤트 추가"}
+            {isAddMode ? t.main.cancel : t.main.add_event}
           </button>
 
-          <span>{localStorage.getItem("userName") || "사용자"}님</span>
+          <span>{localStorage.getItem("username") || "사용자"}님</span>
 
           <button
             onClick={handleLogout}
@@ -285,7 +393,7 @@ export default function CampusMap() {
               cursor: "pointer",
             }}
           >
-            로그아웃
+            {t.main.logout}
           </button>
         </div>
       </div>
@@ -309,7 +417,7 @@ export default function CampusMap() {
             zIndex: 700,
           }}
         >
-          지도에서 이벤트 위치를 클릭하세요
+          {t.main.add_guide}
         </div>
       )}
 
@@ -336,12 +444,12 @@ export default function CampusMap() {
               boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
             }}
           >
-            <h2 style={{ marginBottom: 16 }}>이벤트 등록</h2>
+            <h2 style={{ marginBottom: 16 }}>{t.add.title}</h2>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <input
                 name="title"
-                placeholder="제목 *"
+                placeholder={t.add.title_placeholder}
                 value={form.title}
                 onChange={onFormChange}
                 style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
@@ -349,7 +457,7 @@ export default function CampusMap() {
 
               <textarea
                 name="description"
-                placeholder="내용 *"
+                placeholder={t.add.description_placeholder}
                 rows={4}
                 value={form.description}
                 onChange={onFormChange}
@@ -365,10 +473,10 @@ export default function CampusMap() {
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                 <button type="button" onClick={() => setShowForm(false)}>
-                  취소
+                  {t.add.cancel}
                 </button>
                 <button type="submit" style={{ background: "#667eea", color: "white" }}>
-                  등록
+                  {t.add.post}
                 </button>
               </div>
             </form>
@@ -400,7 +508,7 @@ export default function CampusMap() {
               overflowY: "auto",
             }}
           >
-            <h3>{eventDetails.title}</h3>
+            <h3>{isTranslating ? "" : translatedTitle}</h3>
 
             {eventDetails.imageUrl && (
               <img
@@ -416,10 +524,10 @@ export default function CampusMap() {
               />
             )}
 
-            <p>{eventDetails.description}</p>
+            <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
 
             <div style={{ margin: "10px 0" }}>
-              <b>추천: {eventDetails.likes ?? 0}</b>
+              <b>{t.detail.likes}: {eventDetails.likes ?? 0}</b>
             </div>
 
             <button
@@ -432,7 +540,7 @@ export default function CampusMap() {
                 background: "white",
               }}
             >
-              닫기
+              {t.detail.close}
             </button>
           </div>
         </div>

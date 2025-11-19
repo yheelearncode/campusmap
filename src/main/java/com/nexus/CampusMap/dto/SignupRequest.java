@@ -4,6 +4,7 @@ public class SignupRequest {
     private String username;
     private String email;
     private String password;
+    private String language;
 
     // Getters and Setters
     public String getUsername() { return username; }
@@ -14,4 +15,7 @@ public class SignupRequest {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
 }
