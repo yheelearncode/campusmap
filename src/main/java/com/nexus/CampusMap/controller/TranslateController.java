@@ -3,6 +3,12 @@ package com.nexus.CampusMap.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.io.InputStream;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +17,26 @@ import com.google.cloud.translate.*;
 @RestController
 @RequestMapping("/api")
 public class TranslateController {
-	private final Translate translate = TranslateOptions.getDefaultInstance().getService();
+	private final String api_key = loadAPIKeyFromJson();
+	private final Translate translate = TranslateOptions.newBuilder()
+			.setApiKey(api_key)
+			.build()
+			.getService();
+	
+	private String loadAPIKeyFromJson() {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		// src/main/resources 디렉터리에서 credentials.json 파일 열기
+		try (InputStream inputStream = TranslateController.class.getResourceAsStream("/credentials.json")) {
+			if (inputStream == null) {
+				throw new RuntimeException("Credentials.json 파일을 찾을 수 없습니다.");
+			}
+			JsonNode rootNode = mapper.readTree(inputStream);
+			return rootNode.get("keyString").asText();
+		} catch (IOException e) {
+			throw new RuntimeException("API 키 로드 중 오류 발생");
+		}
+	}
 	
 	@PostMapping("/translate")
 	public ResponseEntity<?> translateText(@RequestBody Map<String, String> payload) {

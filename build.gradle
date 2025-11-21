@@ -39,6 +39,7 @@ dependencies {
 	implementation 'mysql:mysql-connector-java:8.0.33'
 	
 	implementation 'com.google.cloud:google-cloud-translate:2.77.0'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 tasks.named('test') {
