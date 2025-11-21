@@ -19,19 +19,22 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import com.nexus.CampusMap.security.JwtAuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity 
 @EnableMethodSecurity
 public class SecurityConfig {
-	
-	@Autowired
-    private UserDetailsService userDetailsService;
 
     // 1. 비밀번호 암호화 방식 정의
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(); 
+    }
+    
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 
     // 2. HTTP 보안 규칙 정의
@@ -53,8 +56,13 @@ public class SecurityConfig {
 
             // 4. 권한 부여 규칙 설정
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/users/login", "/api/users/signup").permitAll()
-                .anyRequest().authenticated()
+            		.requestMatchers(HttpMethod.GET, "/api/events").permitAll()
+            		.requestMatchers(
+            		        "/api/users/login", "/api/users/signup",
+            		        "/api/auth/login", "/api/auth/signup" 
+            		    ).permitAll()
+            		    
+            		    .anyRequest().authenticated()
             )
             
             // 5. JWT 필터를 Spring Security 체인에 추가 (addFilterBefore)
@@ -67,15 +75,11 @@ public class SecurityConfig {
     
 
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider() {
+    public DaoAuthenticationProvider daoAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
 }

@@ -35,14 +35,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 2. 토큰 유효성 검사 및 사용자 ID 추출
             if (token != null && jwtProvider.validateAndGetUserId(token) != null) {
                 
-                String userIdString = jwtProvider.validateAndGetUserId(token);
+                String username = jwtProvider.validateAndGetUserId(token);
                 //Long userId = Long.valueOf(userIdString);
                 
                 // 3. 사용자 ID로 DB에서 사용자 정보 (UserDetails) 로드
-                // ⚠️ 주의: userDetailsService는 String username으로 로드해야 하므로, 
-                //      실제로는 User Entity를 찾아서 username을 추출해야 합니다.
-                //      여기서는 일단 userIdString을 username처럼 사용한다고 가정합니다.
-                UserDetails userDetails = userService.loadUserByUsername(userIdString);
+                UserDetails userDetails = userService.loadUserByUsername(username);
 
                 // 4. Spring Security에 인증 정보 설정 (로그인 처리)
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

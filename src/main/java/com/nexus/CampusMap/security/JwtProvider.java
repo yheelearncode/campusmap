@@ -31,14 +31,14 @@ public class JwtProvider {
         log.info("JWT Secret Key initialized with length: {}", secretKeyString.length()); 
     }
 
-    public String createToken(Long userId) {
+    public String createToken(String userEmail) {
         // 토큰의 만료 시간을 설정
         Date expiryDate = Date.from(
             Instant.now().plus(1, ChronoUnit.DAYS));
 
         return Jwts.builder()
         		.signWith(this.SECRET_KEY) // 서명에 사용할 키와 알고리즘
-                .setSubject(userId.toString()) // 토큰의 주인(Subject)으로 사용자 ID를 담습니다.
+                .setSubject(userEmail.toString()) // 토큰의 주인(Subject)으로 사용자 ID를 담습니다.
                 .setIssuer("CampusMapApp") // 토큰 발급자
                 .setIssuedAt(new Date()) // 토큰 발급 시간
                 .setExpiration(expiryDate) // 토큰 만료 시간

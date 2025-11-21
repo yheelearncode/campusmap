@@ -33,10 +33,10 @@ public class EventService {
         return eventRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    public Event createEvent(Event event, MultipartFile imageFile, Long currentUserId) {
-        // 이미지 업로드 처리
-    	
-    	event.setAuthorId(currentUserId);
+    public Event createEvent(Event event, MultipartFile imageFile, Long creatorId, String creatorName)throws IOException {
+        
+    	event.setCreatorId(creatorId);
+    	event.setCreatorName(creatorName);
     	
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
@@ -53,10 +53,6 @@ public class EventService {
     public Event getEventById(Long id) {
         return eventRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("이벤트를 찾을 수 없습니다."));
-    }
-
-    public void deleteEvent(Long id) {
-        eventRepository.deleteById(id);
     }
 
     // 이미지 저장 메서드
@@ -87,13 +83,13 @@ public class EventService {
     }
 
     // 이벤트를 수정하는 메서드
-    public Event updateEvent(Long eventId, Event updatedEvent, Long currentUserId) {
+    public Event updateEvent(Long eventId, String currentUsername, Event updatedEvent) {
         // 1. 수정할 이벤트가 존재하는지 확인
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
     
         // 2. 소유자 검증
-        if (!existingEvent.getAuthorId().equals(currentUserId)) {
+        if (!existingEvent.getCreatorName().equals(currentUsername)) {
             // 작성자 ID와 현재 사용자 ID가 다르면 접근 거부 예외 발생
             throw new AccessDeniedException("You are not authorized to update this event. Only the author can modify it.");
         }
@@ -108,13 +104,13 @@ public class EventService {
     }
 
     // 이벤트를 삭제하는 메서드
-    public void deleteEvent(Long eventId, Long currentUserId) { 
+    public void deleteEvent(Long eventId, String currentUsername) { 
         // 1. 삭제할 이벤트가 존재하는지 확인
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
         // 2. 소유자 검증
-        if (!existingEvent.getAuthorId().equals(currentUserId)) {
+        if (!existingEvent.getCreatorName().equals(currentUsername)) {
             // 작성자 ID와 현재 사용자 ID가 다르면 접근 거부 예외 발생
             throw new AccessDeniedException("You are not authorized to delete this event. Only the author can delete it.");
         }

@@ -1,6 +1,7 @@
 package com.nexus.CampusMap.controller;
 
 import com.nexus.CampusMap.entity.Event;
+import com.nexus.CampusMap.entity.User;
 import com.nexus.CampusMap.service.EventService;
 import com.nexus.CampusMap.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,14 +50,17 @@ public class EventController {
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
         try {
+            
             Event event = new Event();
             event.setTitle(title);
             event.setDescription(description);
             event.setLat(lat);
             event.setLon(lon);
             //event.setCreatorId(creatorId);
-            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            Long currentUserId = userService.getUserIdByUsername(currentUsername);
+            String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+            User currentUser = userService.findUserByEmail(userEmail);
+            String currentUsername = currentUser.getUsername();
+            Long currentUserId = currentUser.getId();
 
             // 날짜 파싱
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
@@ -67,10 +71,11 @@ public class EventController {
                 event.setEndsAt(LocalDateTime.parse(endsAt, formatter));
             }
 
-            Event savedEvent = eventService.createEvent(event, image, currentUserId);
+            Event savedEvent = eventService.createEvent(event, image, currentUserId, currentUsername);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이벤트 등록 성공");
+            response.put("creatorName", currentUsername);
             response.put("eventId", savedEvent.getId());
             response.put("imageUrl", savedEvent.getImageUrl());
 
@@ -93,10 +98,11 @@ public class EventController {
     public ResponseEntity<?> deleteEvent(@PathVariable Long id) {
         try {
             // 현재 로그인된 사용자 ID 획득 로직
-            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            Long currentUserId = userService.getUserIdByUsername(currentUsername);
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User currentUser = userService.findUserByEmail(email);
+            String currentUsername = currentUser.getUsername();
         
-            eventService.deleteEvent(id, currentUserId); 
+            eventService.deleteEvent(id, currentUsername); 
         
             Map<String, String> response = new HashMap<>();
             response.put("message", "이벤트 삭제 성공");
@@ -119,19 +125,20 @@ public class EventController {
 
     // 이벤트 수정
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEvent(@PathVariable Long id, @RequestBody Event event) {
+    public ResponseEntity<?> updateEvent(@PathVariable Long id, @RequestBody Event updatedEvent) {
         try {
             // 현재 로그인된 사용자 ID 획득 로직
-            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            Long currentUserId = userService.getUserIdByUsername(currentUsername);
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User currentUser = userService.findUserByEmail(email);
+            String currentUsername = currentUser.getUsername();
         
             // 획득한 ID를 서비스로 전달
-            Event updatedEvent = eventService.updateEvent(id, event, currentUserId); 
+            Event updated = eventService.updateEvent(id, currentUsername, updatedEvent); 
         
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이벤트 수정 성공");
-            response.put("eventId", updatedEvent.getId());
-        
+            response.put("eventId", updated.getId());
+            response.put("creatorName", updated.getCreatorName());
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
             // 권한 거부 시 403 응답

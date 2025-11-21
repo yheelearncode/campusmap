@@ -22,6 +22,8 @@ interface EventDetail {
   likes?: number;
   comments?: { user: string; content: string }[];
   imageUrl?: string;
+  creatorId?: number;
+  creatorName?: string;
 }
 
 export default function CampusMap() {
@@ -38,6 +40,69 @@ export default function CampusMap() {
   const [eventList, setEventList] = useState<EventDetail[]>([]);
   const [eventDetails, setEventDetails] = useState<EventDetail | null>(null);
   const [comment, setComment] = useState("");
+  const [currentUserInfo, setCurrentUserInfo] = useState<{
+    id: string;
+    name: string;
+    role: string;
+  } | null>(null);
+
+  // 컴포넌트 로드 시 로컬 스토리지에서 사용자 정보 가져오기
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    const userName = localStorage.getItem("userName");
+    const userRole = localStorage.getItem("userRole"); 
+
+    if (userId && userName && userRole) {
+      setCurrentUserInfo({ id: userId, name: userName, role: userRole });
+    }
+  }, []);
+
+
+  // 수정/삭제 버튼 표시 권한 확인 함수
+  const canEditOrDelete = (event: EventDetail | null) => {
+    if (!event || !currentUserInfo) return false;
+
+    const currentUserName = localStorage.getItem("userName");
+    const currentRole = currentUserInfo.role;
+
+    // 1. 작성자 ID 비교
+    // DB에서 Long으로 받으므로, event.creatorId는 number이고 currentUserId는 string입니다.
+    const isOwner = event.creatorName === currentUserName;
+    
+    // 2. 관리자 역할 확인
+    const isAdmin = currentRole === "ADMIN" || currentRole === "STAFF";
+
+    return isOwner || isAdmin;
+  };
+
+
+  // 이벤트 삭제 함수 (DELETE API 호출)
+  const handleDeleteEvent = async () => {
+    if (!eventDetails || !confirm(`이벤트 '${eventDetails.title}'을(를) 삭제하시겠습니까?`)) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const res = await fetch(`/api/events/${eventDetails.id}`, {
+      method: 'DELETE',
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+        alert("이벤트가 삭제되었습니다.");
+        setEventDetails(null); // 모달 닫기
+        if (mapInstance) loadOverlays(mapInstance); // 지도 마커 새로고침
+    } else {
+        const errorBody = await res.json().catch(() => ({ message: '알 수 없는 오류' }));
+        alert(`삭제 실패: ${res.status} ${errorBody.message || errorBody.error || '권한이 없습니다.'}`);
+    }
+  };
+
+  // 이벤트 수정 함수 (수정 폼 띄우기)
+  const handleEditEvent = () => {
+    alert(`이벤트 ${eventDetails?.title}을 수정합니다. (PUT API 호출 필요)`);
+    // 여기에 수정 폼을 띄우는 로직을 구현합니다.
+  };
 
   // 로그아웃 함수
   const handleLogout = () => {
@@ -45,6 +110,7 @@ export default function CampusMap() {
       localStorage.removeItem("token");
       localStorage.removeItem("userId");
       localStorage.removeItem("userName");
+      localStorage.removeItem("userRole");
       window.location.href = "/login";
     }
   };
@@ -195,24 +261,50 @@ export default function CampusMap() {
     e.preventDefault();
     if (!newEventPosition) return;
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
+
     const formData = new FormData();
     formData.append("title", form.title);
     formData.append("description", form.description);
     formData.append("lat", String(newEventPosition.lat));
     formData.append("lon", String(newEventPosition.lon));
-    formData.append("creatorId", "1");
 
     if (form.startsAt) formData.append("startsAt", form.startsAt);
     if (form.endsAt) formData.append("endsAt", form.endsAt);
     if (imageFile) formData.append("image", imageFile);
 
+    const headers = {
+        "Authorization": `Bearer ${token}` 
+    };
+
     const res = await fetch("/api/events", {
       method: "POST",
+      headers: headers,
       body: formData,
     });
 
     if (!res.ok) {
-      alert("등록 실패");
+      let errorMessage = "등록 실패";
+      try {
+        // 서버가 보낸 JSON 응답 본문을 읽으려고 시도
+        const errorBody = await res.json(); 
+        
+        if (errorBody && errorBody.error) {
+          errorMessage = errorBody.error; 
+        } else {
+          // JSON 본문이 없거나 다른 형식일 때 상태 코드를 표시
+          errorMessage = `등록 실패 (HTTP ${res.status})`; 
+        }
+      } catch (e) {
+        // JSON 파싱 자체가 실패한 경우 (서버가 빈 응답이나 HTML을 보냈을 때)
+        errorMessage = `등록 실패 (HTTP ${res.status} 응답 본문 없음)`;
+      }
+      
+      alert(errorMessage);
       return;
     }
 
@@ -272,7 +364,14 @@ export default function CampusMap() {
             {isAddMode ? "취소" : "이벤트 추가"}
           </button>
 
-          <span>{localStorage.getItem("userName") || "사용자"}님</span>
+          <span>
+              {currentUserInfo ? `${currentUserInfo.name}님` : "사용자"}
+              {currentUserInfo && (
+                  <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 4, background: currentUserInfo.role === 'ADMIN' ? '#ffc107' : '#28a745', fontSize: 12, fontWeight: 'bold' }}>
+                      {currentUserInfo.role} 
+                  </span>
+              )}
+          </span>
 
           <button
             onClick={handleLogout}
@@ -416,11 +515,34 @@ export default function CampusMap() {
               />
             )}
 
+            {/* 작성자 이름 표시 */}
+            <p style={{ fontSize: 14, color: '#666', marginBottom: 15 }}>
+                작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
+            </p>
+
             <p>{eventDetails.description}</p>
 
             <div style={{ margin: "10px 0" }}>
               <b>추천: {eventDetails.likes ?? 0}</b>
             </div>
+
+            {/* 수정/삭제 버튼 (조건부 렌더링) */}
+            {canEditOrDelete(eventDetails) && (
+                <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+                    <button 
+                        onClick={handleEditEvent} 
+                        style={{ background: "#007bff", color: "white", padding: "8px 15px", borderRadius: 8, border: 'none' }}
+                    >
+                        수정
+                    </button>
+                    <button 
+                        onClick={handleDeleteEvent} 
+                        style={{ background: "#dc3545", color: "white", padding: "8px 15px", borderRadius: 8, border: 'none' }}
+                    >
+                        삭제
+                    </button>
+                </div>
+            )}
 
             <button
               onClick={() => setEventDetails(null)}

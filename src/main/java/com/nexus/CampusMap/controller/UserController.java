@@ -41,6 +41,7 @@ public class UserController {
             user.setEmail(request.getEmail());
             user.setPassword(request.getPassword());
             user.setUsername(request.getUsername());
+            user.setRole(request.getRole());
             
             User savedUser = userService.registerUser(user);
             
@@ -69,28 +70,28 @@ public class UserController {
             // ID와 비밀번호를 AuthenticationManager에게 전달하여 인증을 시도합니다.
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                    request.getEmail(), // 👈 LoginRequest에서 이메일을 사용한다고 가정
+                    request.getEmail(),
                     request.getPassword()
                 )
             );
             
             // 2. 인증 성공 후, 사용자 정보를 가져와 JWT 토큰 생성
             // DB에서 사용자 엔티티(User)를 찾습니다.
-            User user = userService.findByEmail(request.getEmail()); // 👈 UserService에 이 메서드가 필요함!
+            User user = userService.findUserByEmail(request.getEmail());
             
             // 사용자 ID를 기반으로 토큰을 생성합니다.
-            String token = jwtProvider.createToken(user.getId()); 
+            String token = jwtProvider.createToken(user.getEmail()); 
             
             // 3. 토큰을 응답 본문에 담아 클라이언트에게 전달
             Map<String, Object> response = new HashMap<>();
-            response.put("token", token); // 👈 핵심: 클라이언트가 앞으로 사용할 토큰
+            response.put("token", token); 
             response.put("userId", user.getId());
             response.put("username", user.getUsername());
+            response.put("userRole", user.getRole());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             // 인증 실패 (ID/PW 불일치, 사용자 없음 등) 시 예외 처리
-            // BadCredentialsException 등이 발생할 수 있습니다.
             String message = "로그인 실패: ID 또는 비밀번호가 일치하지 않습니다.";
             return ResponseEntity.badRequest().body(Map.of("error", message));
         }

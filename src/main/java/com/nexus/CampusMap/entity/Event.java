@@ -30,6 +30,9 @@ public class Event {
 
     @Column
     private Long creatorId;
+    
+    @Column(name = "creator_name")
+    private String creatorName;
 
     @Column
     private String imageUrl; // 이미지 URL
@@ -84,4 +87,7 @@ public class Event {
     
     public Long getAuthorId() { return authorId; }
     public void setAuthorId(Long authorId) { this.authorId = authorId; }
+    
+    public String getCreatorName() { return creatorName; }
+    public void setCreatorName(String creatorName) { this.creatorName = creatorName; }
 }
