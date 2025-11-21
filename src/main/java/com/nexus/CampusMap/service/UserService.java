@@ -80,5 +80,11 @@ public class UserService implements UserDetailsService {
                 
                 .build();
     }
+    
+    // 이메일로 User 엔티티를 찾아 반환하는 메서드 (로그인 토큰 생성에 필요)
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                             .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+    }
 
 }
