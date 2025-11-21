@@ -56,4 +56,4 @@ public class ChatController {
         // 6) 응답 반환
         return Map.of("answer", answer);
     }
-}g
+}
