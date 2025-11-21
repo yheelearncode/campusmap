@@ -9,11 +9,16 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import com.nexus.CampusMap.security.JwtAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableWebSecurity 
@@ -31,17 +36,33 @@ public class SecurityConfig {
 
     // 2. HTTP 보안 규칙 정의
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers("/public/**", "/auth/**").permitAll() // public, auth 경로는 모두 허용
-                    .anyRequest().authenticated() // 나머지 경로는 인증 필요
-                )
-            .formLogin(Customizer.withDefaults()) // 폼 기반 로그인 설정
-            .httpBasic(Customizer.withDefaults());
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+        
+        // 1. 모든 설정을 연속적인 체인 형태로 연결
+        return http
+            // 1. CSRF, CORS 설정
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(Customizer.withDefaults())
+            
+            // 2. 폼 로그인, HTTP Basic 비활성화
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
 
-        return http.build();
+            // 3. 세션 STATELESS 설정
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) 
+
+            // 4. 권한 부여 규칙 설정
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/api/users/login", "/api/users/signup").permitAll()
+                .anyRequest().authenticated()
+            )
+            
+            // 5. JWT 필터를 Spring Security 체인에 추가 (addFilterBefore)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            
+            // 6. 모든 설정이 완료된 후 build()를 호출
+            .build();
+     
     }
     
 
