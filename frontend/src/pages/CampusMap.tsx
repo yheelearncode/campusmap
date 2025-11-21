@@ -49,7 +49,7 @@ export default function CampusMap() {
   // 컴포넌트 로드 시 로컬 스토리지에서 사용자 정보 가져오기
   useEffect(() => {
     const userId = localStorage.getItem("userId");
-    const userName = localStorage.getItem("userName");
+    const userName = localStorage.getItem("username");
     const userRole = localStorage.getItem("userRole"); 
 
     if (userId && userName && userRole) {
@@ -528,7 +528,7 @@ export default function CampusMap() {
 
             {/* 수정/삭제 버튼 (조건부 렌더링) */}
             {canEditOrDelete(eventDetails) && (
-                <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+                <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "center" }}>
                     <button 
                         onClick={handleEditEvent} 
                         style={{ background: "#007bff", color: "white", padding: "8px 15px", borderRadius: 8, border: 'none' }}
