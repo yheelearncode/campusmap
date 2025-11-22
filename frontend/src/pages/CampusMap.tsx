@@ -1,3 +1,5 @@
+import ChatWidget from "../components/ChatWidget";
+
 // window kakao 선언부, React import 유지
 import React, { useEffect, useRef, useState } from "react";
 
@@ -8,7 +10,7 @@ declare global {
   }
 }
 
-const KAKAO_MAP_API_KEY = "08a2de71046acd72f7f1c67a474c9e17";
+const KAKAO_MAP_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
 // 상세 정보 모달용 타입
 interface EventDetail {
@@ -347,203 +349,235 @@ export default function CampusMap() {
   //   렌더링
   // ============================
 
-  return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* 헤더 */}
+    return (
+  <div
+    style={{
+      width: "100vw",
+      height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      position: "relative", // 안내배너/챗봇 위치 기준
+    }}
+  >
+    {/* 🔹 오른쪽 아래 챗봇 위젯 */}
+    <ChatWidget />
+
+    {/* 헤더 */}
+    <div
+      style={{
+        padding: "12px 24px",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        color: "white",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+      }}
+    >
+      <h2 style={{ margin: 0 }}>{t.main.title}</h2>
+
+      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        <button
+          onClick={() => setIsAddMode(!isAddMode)}
+          style={{
+            padding: "8px 20px",
+            borderRadius: "8px",
+            border: "none",
+            fontWeight: "600",
+            cursor: "pointer",
+            background: isAddMode ? "#ff6b6b" : "rgba(255,255,255,0.2)",
+            color: "white",
+          }}
+        >
+          {isAddMode ? t.main.cancel : t.main.add_event}
+        </button>
+
+        <span>{localStorage.getItem("username") || "사용자"}님</span>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: "8px 20px",
+            border: "none",
+            borderRadius: "8px",
+            background: "rgba(255,255,255,0.2)",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          {t.main.logout}
+        </button>
+      </div>
+    </div>
+
+    {/* 지도 */}
+    <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
+
+    {/* 추가 모드 안내 */}
+    {isAddMode && (
       <div
         style={{
-          padding: "12px 24px",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          position: "absolute",
+          top: 80,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#667eea",
           color: "white",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          padding: "12px 24px",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          zIndex: 700,
         }}
       >
-        <h2 style={{ margin: 0 }}>{t.main.title}</h2>
+        {t.main.add_guide}
+      </div>
+    )}
 
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+    {/* 이벤트 등록 모달 */}
+    {showForm && (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.45)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000,
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: 28,
+            borderRadius: 16,
+            width: "100%",
+            maxWidth: 480,
+            boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+          }}
+        >
+          <h2 style={{ marginBottom: 16 }}>{t.add.title}</h2>
+
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: 16 }}
+          >
+            <input
+              name="title"
+              placeholder={t.add.title_placeholder}
+              value={form.title}
+              onChange={onFormChange}
+              style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+            />
+
+            <textarea
+              name="description"
+              placeholder={t.add.description_placeholder}
+              rows={4}
+              value={form.description}
+              onChange={onFormChange}
+              style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+            />
+
+            <input type="file" accept="image/*" onChange={onImageChange} />
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <input
+                name="startsAt"
+                type="datetime-local"
+                value={form.startsAt}
+                onChange={onFormChange}
+              />
+              <input
+                name="endsAt"
+                type="datetime-local"
+                value={form.endsAt}
+                onChange={onFormChange}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button type="button" onClick={() => setShowForm(false)}>
+                {t.add.cancel}
+              </button>
+              <button
+                type="submit"
+                style={{ background: "#667eea", color: "white" }}
+              >
+                {t.add.post}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+    {/* 상세정보 모달 */}
+    {eventDetails && (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.45)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1200,
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: 20,
+            borderRadius: 12,
+            width: "90%",
+            maxWidth: 580,
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
+          <h3>{isTranslating ? "" : translatedTitle}</h3>
+
+          {eventDetails.imageUrl && (
+            <img
+              src={eventDetails.imageUrl}
+              alt=""
+              style={{
+                width: "100%",
+                borderRadius: 12,
+                marginBottom: 12,
+                objectFit: "cover",
+                maxHeight: 350,
+              }}
+            />
+          )}
+
+          <p>
+            {isTranslating
+              ? "Translating..."
+              : translatedDescription /* eventDetails.description */}
+          </p>
+
+          <div style={{ margin: "10px 0" }}>
+            <b>
+              {t.detail.likes}: {eventDetails.likes ?? 0}
+            </b>
+          </div>
+
           <button
-            onClick={() => setIsAddMode(!isAddMode)}
+            onClick={() => setEventDetails(null)}
             style={{
-              padding: "8px 20px",
-              borderRadius: "8px",
-              border: "none",
-              fontWeight: "600",
-              cursor: "pointer",
-              background: isAddMode ? "#ff6b6b" : "rgba(255,255,255,0.2)",
-              color: "white",
+              marginTop: 16,
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "1px solid #ccc",
+              background: "white",
             }}
           >
-            {isAddMode ? t.main.cancel : t.main.add_event}
-          </button>
-
-          <span>{localStorage.getItem("username") || "사용자"}님</span>
-
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "8px 20px",
-              border: "none",
-              borderRadius: "8px",
-              background: "rgba(255,255,255,0.2)",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            {t.main.logout}
+            {t.detail.close}
           </button>
         </div>
       </div>
-
-      {/* 지도 */}
-      <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
-
-      {/* 추가 모드 안내 */}
-      {isAddMode && (
-        <div
-          style={{
-            position: "absolute",
-            top: 80,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#667eea",
-            color: "white",
-            padding: "12px 24px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            zIndex: 700,
-          }}
-        >
-          {t.main.add_guide}
-        </div>
-      )}
-
-      {/* 이벤트 등록 모달 */}
-      {showForm && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: 28,
-              borderRadius: 16,
-              width: "100%",
-              maxWidth: 480,
-              boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-            }}
-          >
-            <h2 style={{ marginBottom: 16 }}>{t.add.title}</h2>
-
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <input
-                name="title"
-                placeholder={t.add.title_placeholder}
-                value={form.title}
-                onChange={onFormChange}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-              />
-
-              <textarea
-                name="description"
-                placeholder={t.add.description_placeholder}
-                rows={4}
-                value={form.description}
-                onChange={onFormChange}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-              />
-
-              <input type="file" accept="image/*" onChange={onImageChange} />
-
-              <div style={{ display: "flex", gap: 10 }}>
-                <input name="startsAt" type="datetime-local" value={form.startsAt} onChange={onFormChange} />
-                <input name="endsAt" type="datetime-local" value={form.endsAt} onChange={onFormChange} />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button type="button" onClick={() => setShowForm(false)}>
-                  {t.add.cancel}
-                </button>
-                <button type="submit" style={{ background: "#667eea", color: "white" }}>
-                  {t.add.post}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 상세정보 모달 */}
-      {eventDetails && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: 20,
-              borderRadius: 12,
-              width: "90%",
-              maxWidth: 580,
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
-          >
-            <h3>{isTranslating ? "" : translatedTitle}</h3>
-
-            {eventDetails.imageUrl && (
-              <img
-                src={eventDetails.imageUrl}
-                alt=""
-                style={{
-                  width: "100%",
-                  borderRadius: 12,
-                  marginBottom: 12,
-                  objectFit: "cover",
-                  maxHeight: 350,
-                }}
-              />
-            )}
-
-            <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
-
-            <div style={{ margin: "10px 0" }}>
-              <b>{t.detail.likes}: {eventDetails.likes ?? 0}</b>
-            </div>
-
-            <button
-              onClick={() => setEventDetails(null)}
-              style={{
-                marginTop: 16,
-                padding: "10px 20px",
-                borderRadius: 8,
-                border: "1px solid #ccc",
-                background: "white",
-              }}
-            >
-              {t.detail.close}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+    )}
+  </div>
+);}
