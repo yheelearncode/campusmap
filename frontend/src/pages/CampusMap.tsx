@@ -125,7 +125,7 @@ export default function CampusMap() {
 
   // 언어
   const userLang = (localStorage.getItem('language') as 'ko' | 'en' | 'mn') || 'ko';
-  const t = ui_translations[userLang];
+  const t = ui_translations[userLang] || ui_translations['ko'];
 
   const [translatedTitle, setTranslatedTitle] = useState("");
   const [translatedDescription, setTranslatedDescription] = useState("");
@@ -214,17 +214,17 @@ export default function CampusMap() {
           level: 4,
         });
 
-          setMapInstance(map);
-          loadOverlays(map);
+        setMapInstance(map);
+        loadOverlays(map);
 
-          window.kakao.maps.event.addListener(map, "click", (e: any) => {
-            if (isAddMode) {
-              const latlng = e.latLng;
-              setNewEventPosition({ lat: latlng.getLat(), lon: latlng.getLng() });
-              setShowForm(true);
-              setIsAddMode(false);
-            }
-          });
+        window.kakao.maps.event.addListener(map, "click", (e: any) => {
+          if (isAddMode) {
+            const latlng = e.latLng;
+            setNewEventPosition({ lat: latlng.getLat(), lon: latlng.getLng() });
+            setShowForm(true);
+            setIsAddMode(false);
+          }
+        });
       });
     };
 
@@ -252,9 +252,9 @@ export default function CampusMap() {
               style="cursor:pointer;width:60px;height:60px;"
             >
               ${ev.imageUrl
-                ? `<img src="${ev.imageUrl}" style="width:100%;height:100%;border-radius:12px;object-fit:cover;" />`
-                : `<div style="background:#667eea;color:white;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;">${ev.title[0]}</div>`
-              }
+              ? `<img src="${ev.imageUrl}" style="width:100%;height:100%;border-radius:12px;object-fit:cover;" />`
+              : `<div style="background:#667eea;color:white;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;">${ev.title[0]}</div>`
+            }
             </div>
           `;
 
