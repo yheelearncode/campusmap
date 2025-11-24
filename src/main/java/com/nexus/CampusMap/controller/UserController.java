@@ -7,16 +7,31 @@ import com.nexus.CampusMap.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.nexus.CampusMap.security.JwtProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.security.authentication.AuthenticationManager;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/users")
 public class UserController {
-    
+
     @Autowired
     private UserService userService;
+
+    // JWT 관련
+    @Autowired
+    private JwtProvider jwtProvider;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     // 회원가입
     @PostMapping("/signup")
@@ -27,7 +42,8 @@ public class UserController {
             user.setPassword(request.getPassword());
             user.setUsername(request.getUsername());
             user.setLanguage(request.getLanguage());
-            
+            user.setRole(request.getRole());
+
             User savedUser = userService.registerUser(user);
             
             Map<String, Object> response = new HashMap<>();
@@ -46,23 +62,41 @@ public class UserController {
         }
     }
 
-    // 로그인
+ // 로그인
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+
         try {
-            User user = userService.login(request.getEmail(), request.getPassword());
+            // 1. Spring Security의 인증 처리 (AuthenticationManager 사용)
+            // ID와 비밀번호를 AuthenticationManager에게 전달하여 인증을 시도합니다.
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    request.getEmail(),
+                    request.getPassword()
+                )
+            );
+
+            // 2. 인증 성공 후, 사용자 정보를 가져와 JWT 토큰 생성
+            // DB에서 사용자 엔티티(User)를 찾습니다.
+            User user = userService.findUserByEmail(request.getEmail());
             
+            // 사용자 ID를 기반으로 토큰을 생성합니다.
+            String token = jwtProvider.createToken(user.getEmail());
+
+            // 3. 토큰을 응답 본문에 담아 클라이언트에게 전달
             Map<String, Object> response = new HashMap<>();
-            response.put("token", "temp-token-" + user.getId());
+            response.put("token", token);
             response.put("userId", user.getId());
             response.put("username", user.getUsername());
+            response.put("userRole", user.getRole());
+
             response.put("language", user.getLanguage());
-            
+
             return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            // 인증 실패 (ID/PW 불일치, 사용자 없음 등) 시 예외 처리
+            String message = "로그인 실패: ID 또는 비밀번호가 일치하지 않습니다.";
+            return ResponseEntity.badRequest().body(Map.of("error", message));
         }
     }
 

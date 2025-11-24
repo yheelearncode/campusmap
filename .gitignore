@@ -38,3 +38,5 @@ out/
 
 # Credentials
 credentials.json
+
+.env

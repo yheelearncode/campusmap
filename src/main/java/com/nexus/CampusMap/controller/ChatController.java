@@ -2,7 +2,7 @@
 package com.nexus.CampusMap.controller;
 import com.google.gson.Gson;
 import com.nexus.CampusMap.repository.BuildingRepository;
-import com.nexus.CampusMap.service.LlamaService;
+import com.nexus.CampusMap.service.GeminiService;
 import com.nexus.CampusMap.entity.Building;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +18,7 @@ import java.util.Map;
 public class ChatController {
 
     @Autowired
-    private LlamaService llamaService;
+    private GeminiService geminiService;
 
     @Autowired
     private BuildingRepository buildingRepository;
@@ -50,8 +50,8 @@ public class ChatController {
         --- 답변 ---
         """;
 
-        // 5) Llama 모델 호출
-        String answer = llamaService.ask(prompt);
+        // 5) Gemini 모델 호출
+        String answer = geminiService.ask(prompt);
 
         // 6) 응답 반환
         return Map.of("answer", answer);
