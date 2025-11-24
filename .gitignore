@@ -40,3 +40,4 @@ out/
 credentials.json
 
 .env
+src/main/resources/application-keys.properties

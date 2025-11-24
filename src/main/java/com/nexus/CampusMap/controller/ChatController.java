@@ -50,7 +50,6 @@ public class ChatController {
         --- 답변 ---
         """;
 
-        // 5) Gemini 모델 호출
         String answer = geminiService.ask(prompt);
 
         // 6) 응답 반환
