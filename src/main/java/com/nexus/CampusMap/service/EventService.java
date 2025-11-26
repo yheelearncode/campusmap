@@ -83,7 +83,7 @@ public class EventService {
     }
 
     // 이벤트를 수정하는 메서드
-    public Event updateEvent(Long eventId, String currentUsername, Event updatedEvent) {
+    public Event updateEvent(Long eventId, String currentUsername, Event updatedEvent, MultipartFile imageFile) throws IOException {
         // 1. 수정할 이벤트가 존재하는지 확인
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
@@ -99,8 +99,43 @@ public class EventService {
         existingEvent.setDescription(updatedEvent.getDescription());
         existingEvent.setLat(updatedEvent.getLat());
         existingEvent.setLon(updatedEvent.getLon());
+        
+        // 날짜 업데이트
+        if (updatedEvent.getStartsAt() != null) {
+            existingEvent.setStartsAt(updatedEvent.getStartsAt());
+        }
+        if (updatedEvent.getEndsAt() != null) {
+            existingEvent.setEndsAt(updatedEvent.getEndsAt());
+        }
+        
+        // 이미지 업데이트
+        if (imageFile != null && !imageFile.isEmpty()) {
+            // 기존 이미지 삭제 (선택사항)
+            if (existingEvent.getImageUrl() != null) {
+                deleteOldImage(existingEvent.getImageUrl());
+            }
+            
+            // 새 이미지 저장
+            String newImageUrl = saveImage(imageFile);
+            existingEvent.setImageUrl(newImageUrl);
+        }
 
         return eventRepository.save(existingEvent);
+    }
+    
+    // 기존 이미지 파일 삭제 메서드
+    private void deleteOldImage(String imageUrl) {
+        try {
+            if (imageUrl != null && imageUrl.startsWith("/uploads/")) {
+                String filename = imageUrl.substring("/uploads/".length());
+                Path filePath = Paths.get(uploadDir + filename);
+                Files.deleteIfExists(filePath);
+                System.out.println("✅ 기존 이미지 삭제: " + filePath.toString());
+            }
+        } catch (IOException e) {
+            System.err.println("⚠️ 이미지 삭제 실패: " + e.getMessage());
+            // 삭제 실패해도 계속 진행
+        }
     }
 
     // 이벤트를 삭제하는 메서드

@@ -47,12 +47,12 @@ const ui_translations = {
       post: "등록",
       cancel: "취소",
       success: "등록 완료!",
-      fail: "등록 실패"
+      fail: "등록 실패",
     },
     detail: {
       likes: "추천",
       close: "닫기",
-    }
+    },
   },
   en: {
     main: {
@@ -70,12 +70,12 @@ const ui_translations = {
       post: "Post",
       cancel: "Cancel",
       success: "Post Done!",
-      fail: "Post Failed"
+      fail: "Post Failed",
     },
     detail: {
       likes: "Likes",
       close: "Close",
-    }
+    },
   },
   mn: {
     main: {
@@ -93,30 +93,57 @@ const ui_translations = {
       post: "등록(mn)",
       cancel: "취소(mn)",
       success: "등록 완료!(mn)",
-      fail: "등록 실패(mn)"
+      fail: "등록 실패(mn)",
     },
     detail: {
       likes: "추천(mn)",
       close: "닫기(mn)",
-    }
-  }
+    },
+  },
 };
 
 export default function CampusMap() {
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // 추가 모달용 상태
   const [showForm, setShowForm] = useState(false);
   const [isAddMode, setIsAddMode] = useState(false);
   const [newEventPosition, setNewEventPosition] = useState<{ lat: number; lon: number } | null>(null);
   const [form, setForm] = useState({ title: "", description: "", startsAt: "", endsAt: "" });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  // 수정 모달용 상태
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    id: number | null;
+    title: string;
+    description: string;
+    startsAt: string;
+    endsAt: string;
+    lat: number;
+    lon: number;
+  }>({
+    id: null,
+    title: "",
+    description: "",
+    startsAt: "",
+    endsAt: "",
+    lat: 0,
+    lon: 0,
+  });
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+
+  // 지도/오버레이
   const [overlays, setOverlays] = useState<any[]>([]);
   const [mapInstance, setMapInstance] = useState<any>(null);
 
+  // 이벤트 목록 & 상세
   const [eventList, setEventList] = useState<EventDetail[]>([]);
   const [eventDetails, setEventDetails] = useState<EventDetail | null>(null);
   const [comment, setComment] = useState("");
 
+  // 유저 정보
   const [currentUserInfo, setCurrentUserInfo] = useState<{
     id: string;
     name: string;
@@ -124,8 +151,8 @@ export default function CampusMap() {
   } | null>(null);
 
   // 언어
-  const userLang = (localStorage.getItem('language') as 'ko' | 'en' | 'mn') || 'ko';
-  const t = ui_translations[userLang] || ui_translations['ko'];
+  const userLang = (localStorage.getItem("language") as "ko" | "en" | "mn") || "ko";
+  const t = ui_translations[userLang] || ui_translations["ko"];
 
   const [translatedTitle, setTranslatedTitle] = useState("");
   const [translatedDescription, setTranslatedDescription] = useState("");
@@ -162,7 +189,7 @@ export default function CampusMap() {
 
     const res = await fetch(`/api/events/${eventDetails.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (res.ok) {
@@ -174,11 +201,91 @@ export default function CampusMap() {
     }
   };
 
+  // 수정 버튼 클릭 -> 수정 모달 열기
   const handleEditEvent = () => {
-    alert("수정 기능은 아직 구현되지 않았습니다.");
+    if (!eventDetails) return;
+
+    // datetime-local 형식 맞추기 (YYYY-MM-DDTHH:mm)
+    const startsAt = eventDetails.startsAt ? eventDetails.startsAt.substring(0, 16) : "";
+    const endsAt = eventDetails.endsAt ? eventDetails.endsAt.substring(0, 16) : "";
+
+    setEditForm({
+      id: eventDetails.id,
+      title: eventDetails.title,
+      description: eventDetails.description,
+      startsAt,
+      endsAt,
+      lat: eventDetails.lat,
+      lon: eventDetails.lon,
+    });
+    setEditImageFile(null);
+    setCurrentImageUrl(eventDetails.imageUrl || null);
+
+    setIsEditMode(true);     // 수정 모달 열기
+    setShowForm(false);      // 등록 모달 닫기
+    setEventDetails(null);   // 상세 모달 닫기
   };
 
-  // 번역
+  // 수정 폼 입력 핸들러
+  const onEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // 수정 이미지 변경 핸들러
+  const onEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setEditImageFile(e.target.files[0]);
+    }
+  };
+
+  // 수정 제출 (PUT)
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.id) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", editForm.title);
+    formData.append("description", editForm.description);
+
+    formData.append("lon", String(editForm.lon));
+    formData.append("lat", String(editForm.lat));
+    if (editForm.startsAt) formData.append("startsAt", editForm.startsAt);
+    if (editForm.endsAt) formData.append("endsAt", editForm.endsAt);
+    if (editImageFile) {
+      formData.append("image", editImageFile);
+    }
+
+    const res = await fetch(`/api/events/${editForm.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (res.ok) {
+      alert("수정 완료!");
+      setIsEditMode(false);
+      setEditImageFile(null);
+      setCurrentImageUrl(null);
+      if (mapInstance) loadOverlays(mapInstance);
+    } else {
+      try {
+        const data = await res.json();
+        alert(`수정 실패: ${data.error || "알 수 없는 오류"}`);
+      } catch {
+        alert("수정 실패(서버 응답 오류)");
+      }
+    }
+  };
+
+  // 번역 (상세 모달 열릴 때)
   useEffect(() => {
     if (!eventDetails) return;
 
@@ -190,11 +297,11 @@ export default function CampusMap() {
       body: JSON.stringify({
         title: eventDetails.title,
         description: eventDetails.description,
-        targetLang: userLang
-      })
+        targetLang: userLang,
+      }),
     })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setTranslatedTitle(data.translatedTitle || eventDetails.title);
         setTranslatedDescription(data.translatedDescription || eventDetails.description);
       })
@@ -230,13 +337,16 @@ export default function CampusMap() {
 
     document.head.appendChild(script);
 
-    return () => document.head.removeChild(script);
+    return () => {
+      document.head.removeChild(script);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAddMode]);
 
   // 오버레이 로드
   function loadOverlays(map: any) {
     fetch("/api/events")
-      .then(res => res.json())
+      .then((res) => res.json())
       .then((events: EventDetail[]) => {
         setEventList(events);
         overlays.forEach((o) => o.setMap(null));
@@ -281,17 +391,17 @@ export default function CampusMap() {
     };
   }, [eventList]);
 
-  // 입력 핸들러
-  const onFormChange = (e: any) => {
+  // 입력 핸들러 (등록 모달)
+  const onFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const onImageChange = (e: any) => {
-    if (e.target.files[0]) setImageFile(e.target.files[0]);
+  const onImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
   };
 
-  // 이벤트 등록
-  const handleSubmit = async (e: any) => {
+  // 이벤트 등록 (POST)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventPosition) return;
 
@@ -318,6 +428,7 @@ export default function CampusMap() {
       setShowForm(false);
       setForm({ title: "", description: "", startsAt: "", endsAt: "" });
       setImageFile(null);
+      setNewEventPosition(null);
       if (mapInstance) loadOverlays(mapInstance);
     } else {
       alert("등록 실패");
@@ -334,7 +445,6 @@ export default function CampusMap() {
         position: "relative",
       }}
     >
-
       {/* 🔹 챗봇 */}
       <ChatWidget />
 
@@ -368,7 +478,6 @@ export default function CampusMap() {
 
           <span>
             {currentUserInfo ? `${currentUserInfo.name}님` : "사용자"}
-
             {currentUserInfo && (
               <span
                 style={{
@@ -430,10 +539,7 @@ export default function CampusMap() {
           >
             <h2>{t.add.title}</h2>
 
-            <form
-              onSubmit={handleSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: 12 }}
-            >
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input
                 name="title"
                 placeholder={t.add.title_placeholder}
@@ -454,18 +560,8 @@ export default function CampusMap() {
               <input type="file" accept="image/*" onChange={onImageChange} />
 
               <div style={{ display: "flex", gap: 10 }}>
-                <input
-                  type="datetime-local"
-                  name="startsAt"
-                  value={form.startsAt}
-                  onChange={onFormChange}
-                />
-                <input
-                  type="datetime-local"
-                  name="endsAt"
-                  value={form.endsAt}
-                  onChange={onFormChange}
-                />
+                <input type="datetime-local" name="startsAt" value={form.startsAt} onChange={onFormChange} />
+                <input type="datetime-local" name="endsAt" value={form.endsAt} onChange={onFormChange} />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
@@ -509,7 +605,7 @@ export default function CampusMap() {
               overflowY: "auto",
             }}
           >
-            <h3>{translatedTitle}</h3>
+            <h3>{isTranslating ? "번역 중..." : translatedTitle}</h3>
 
             {eventDetails.imageUrl && (
               <img
@@ -522,7 +618,7 @@ export default function CampusMap() {
               />
             )}
 
-            <p>{translatedDescription}</p>
+            <p>{isTranslating ? "..." : translatedDescription}</p>
 
             <p style={{ color: "#666", marginTop: 10 }}>
               작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
@@ -574,6 +670,96 @@ export default function CampusMap() {
             >
               {t.detail.close}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* =============== 이벤트 수정 모달 =============== */}
+      {isEditMode && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 2500,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 20,
+              borderRadius: 12,
+              width: 400,
+            }}
+          >
+            <h2>이벤트 수정</h2>
+
+            <form onSubmit={handleUpdateSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                name="title"
+                placeholder="제목"
+                value={editForm.title}
+                onChange={onEditFormChange}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+
+              <textarea
+                name="description"
+                placeholder="내용"
+                value={editForm.description}
+                onChange={onEditFormChange}
+                rows={4}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+
+              {currentImageUrl && (
+                <div style={{ marginBottom: 8 }}>
+                  <p style={{ fontSize: 14, color: "#666", marginBottom: 4 }}>현재 이미지:</p>
+                  <img
+                    src={currentImageUrl}
+                    style={{
+                      width: "100%",
+                      maxHeight: 200,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                    }}
+                  />
+                </div>
+              )}
+
+              <input type="file" accept="image/*" onChange={onEditImageChange} />
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <input
+                  type="datetime-local"
+                  name="startsAt"
+                  value={editForm.startsAt}
+                  onChange={onEditFormChange}
+                />
+                <input
+                  type="datetime-local"
+                  name="endsAt"
+                  value={editForm.endsAt}
+                  onChange={onEditFormChange}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={() => setIsEditMode(false)}>
+                  취소
+                </button>
+
+                <button
+                  type="submit"
+                  style={{ background: "#007bff", color: "white", padding: "8px 15px" }}
+                >
+                  수정 완료
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,23 +1,31 @@
 package com.nexus.CampusMap.controller;
 
-import com.nexus.CampusMap.entity.Event;
-import com.nexus.CampusMap.entity.User;
-import com.nexus.CampusMap.service.EventService;
-import com.nexus.CampusMap.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.nexus.CampusMap.entity.Event;
+import com.nexus.CampusMap.entity.User;
+import com.nexus.CampusMap.service.EventService;
+import com.nexus.CampusMap.service.UserService;
 
 @RestController
 @RequestMapping("/api/events")
@@ -125,20 +133,46 @@ public class EventController {
 
     // 이벤트 수정
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEvent(@PathVariable Long id, @RequestBody Event updatedEvent) {
+    public ResponseEntity<?> updateEvent(
+            @PathVariable Long id,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("lat") Double lat,
+            @RequestParam("lon") Double lon,
+            @RequestParam(value = "startsAt", required = false) String startsAt,
+            @RequestParam(value = "endsAt", required = false) String endsAt,
+            @RequestParam(value = "image", required = false) MultipartFile image
+    ) {
         try {
             // 현재 로그인된 사용자 ID 획득 로직
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
             User currentUser = userService.findUserByEmail(email);
             String currentUsername = currentUser.getUsername();
 
+            // 업데이트할 이벤트 객체 생성
+            Event updatedEvent = new Event();
+            updatedEvent.setTitle(title);
+            updatedEvent.setDescription(description);
+            updatedEvent.setLat(lat);
+            updatedEvent.setLon(lon);
+
+            // 날짜 파싱
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+            if (startsAt != null && !startsAt.isEmpty()) {
+                updatedEvent.setStartsAt(LocalDateTime.parse(startsAt, formatter));
+            }
+            if (endsAt != null && !endsAt.isEmpty()) {
+                updatedEvent.setEndsAt(LocalDateTime.parse(endsAt, formatter));
+            }
+
             // 획득한 ID를 서비스로 전달
-            Event updated = eventService.updateEvent(id, currentUsername, updatedEvent);
+            Event updated = eventService.updateEvent(id, currentUsername, updatedEvent, image);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이벤트 수정 성공");
             response.put("eventId", updated.getId());
             response.put("creatorName", updated.getCreatorName());
+            response.put("imageUrl", updated.getImageUrl());
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
             // 권한 거부 시 403 응답
