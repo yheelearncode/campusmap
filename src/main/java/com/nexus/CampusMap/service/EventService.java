@@ -1,6 +1,7 @@
 package com.nexus.CampusMap.service;
 
 import com.nexus.CampusMap.entity.Event;
+import com.nexus.CampusMap.entity.User;
 import com.nexus.CampusMap.repository.EventRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -83,15 +84,19 @@ public class EventService {
     }
 
     // 이벤트를 수정하는 메서드
-    public Event updateEvent(Long eventId, String currentUsername, Event updatedEvent, MultipartFile imageFile) throws IOException {
+    public Event updateEvent(Long eventId, User currentUser, Event updatedEvent, MultipartFile imageFile) throws IOException {
         // 1. 수정할 이벤트가 존재하는지 확인
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
     
         // 2. 소유자 검증
-        if (!existingEvent.getCreatorName().equals(currentUsername)) {
-            // 작성자 ID와 현재 사용자 ID가 다르면 접근 거부 예외 발생
-            throw new AccessDeniedException("You are not authorized to update this event. Only the author can modify it.");
+        String currentUsername = currentUser.getUsername();
+        String currentRole = currentUser.getRole();
+        boolean isOwner = existingEvent.getCreatorName().equals(currentUsername);
+        boolean isAdmin = "ADMIN".equals(currentRole);
+        
+        if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("수정 권한이 없습니다. 작성자 또는 관리자만 수정 가능합니다.");
         }
     
         // 3. 검증 통과: 업데이트 진행
@@ -139,15 +144,20 @@ public class EventService {
     }
 
     // 이벤트를 삭제하는 메서드
-    public void deleteEvent(Long eventId, String currentUsername) { 
+    public void deleteEvent(Long eventId, User currentUser) { 
         // 1. 삭제할 이벤트가 존재하는지 확인
         Event existingEvent = eventRepository.findById(eventId)
                                        .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + eventId));
 
         // 2. 소유자 검증
-        if (!existingEvent.getCreatorName().equals(currentUsername)) {
-            // 작성자 ID와 현재 사용자 ID가 다르면 접근 거부 예외 발생
-            throw new AccessDeniedException("You are not authorized to delete this event. Only the author can delete it.");
+        String currentUsername = currentUser.getUsername();
+        String currentRole = currentUser.getRole();
+        
+        boolean isOwner = existingEvent.getCreatorName().equals(currentUsername);
+        boolean isAdmin = "ADMIN".equals(currentRole);
+        
+        if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("삭제 권한이 없습니다. 작성자 또는 관리자만 삭제 가능합니다.");
         }
     
         // 3. 검증 통과: 삭제 진행

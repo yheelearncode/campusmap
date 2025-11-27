@@ -103,14 +103,15 @@ public class EventController {
 
     // 이벤트 삭제
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEvent(@PathVariable Long id) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> deleteEvent(@PathVariable("id") Long id) {
         try {
             // 현재 로그인된 사용자 ID 획득 로직
             String email = SecurityContextHolder.getContext().getAuthentication().getName();
             User currentUser = userService.findUserByEmail(email);
             String currentUsername = currentUser.getUsername();
 
-            eventService.deleteEvent(id, currentUsername);
+            eventService.deleteEvent(id, currentUser);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "이벤트 삭제 성공");
@@ -133,8 +134,9 @@ public class EventController {
 
     // 이벤트 수정
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<?> updateEvent(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
             @RequestParam("lat") Double lat,
@@ -166,7 +168,7 @@ public class EventController {
             }
 
             // 획득한 ID를 서비스로 전달
-            Event updated = eventService.updateEvent(id, currentUsername, updatedEvent, image);
+            Event updated = eventService.updateEvent(id, currentUser, updatedEvent, image);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "이벤트 수정 성공");
