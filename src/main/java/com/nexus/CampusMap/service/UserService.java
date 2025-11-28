@@ -11,9 +11,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
+import com.nexus.CampusMap.dto.PasswordChangeRequest;
 
 import com.nexus.CampusMap.repository.UserRepository;
+
+
 
 @Service
 @Transactional
@@ -21,6 +23,24 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    // public void changePassword(Long userId, PasswordChangeRequest passwordChangeRequest) {
+    //     User user = userRepository.findById(userId)
+    //              .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+    //     // 이전 비밀번호 확인
+    //     if (!passwordEncoder.matches(passwordChangeRequest.getOldPassword(), user.getPassword())) {
+    //         throw new IllegalArgumentException("Old password is incorrect.");
+    //     }
+
+    //     // 새 비밀번호 암호화 및 저장
+    //     String encoded = passwordEncoder.encode(passwordChangeRequest.getNewPassword());
+    //     user.setPassword(encoded);
+        
+    //     userRepository.save(user);
+
+    // }
+
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;

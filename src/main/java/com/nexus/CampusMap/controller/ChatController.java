@@ -26,16 +26,12 @@ public class ChatController {
     @PostMapping
     public Map<String, String> chat(@RequestBody Map<String, String> req) {
 
-        // 1) 사용자 질문 꺼내기
         String message = req.get("message");
 
-        // 2) DB 건물정보 가져오기
         List<Building> data = buildingRepository.findAll();
 
-        // 3) JSON 변환
         String buildingJson = new Gson().toJson(data);
 
-        // 4) 프롬프트 완성
         String prompt = """
         너는 충북대학교 교내 안내 챗봇이야.
         아래 JSON에 교내 건물 정보가 담겨 있다.
