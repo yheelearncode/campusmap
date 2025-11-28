@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 // (필요 시 수정) 챗봇 위젯 import
 import ChatWidget from "../components/ChatWidget";
 
+import { useNavigate } from "react-router-dom";
+
 declare global {
   interface Window {
     kakao: any;
@@ -106,6 +108,8 @@ const ui_translations = {
 export default function CampusMap() {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
+
+  const navigate = useNavigate();
 
   // 추가 모달용 상태
   const [showForm, setShowForm] = useState(false);
@@ -565,6 +569,40 @@ export default function CampusMap() {
             )}
           </span>
 
+          {currentUserInfo && currentUserInfo.role === "ADMIN" && (
+            <button
+              onClick={() => navigate("/admin")}
+              style={{
+                padding: "8px 20px",
+                borderRadius: "8px",
+                border: "none",
+                fontWeight: "600",
+                cursor: "pointer",
+                background: "#2d3436",
+                color: "white",
+              }}
+            >
+              관리자 페이지
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              if (confirm(t.main.logout_check)) {
+                localStorage.clear();
+                window.location.href = "/login";
+              }
+            }}
+            style={{
+              padding: "8px 20px",
+              background: "rgba(255,255,255,0.2)",
+              borderRadius: 8,
+              border: "none",
+              color: "white",
+            }}
+          >
+            {t.main.logout}
+          </button>
           {/* 프로필 수정 버튼 */}
           {currentUserInfo && (
             <button
