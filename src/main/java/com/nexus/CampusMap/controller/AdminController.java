@@ -27,7 +27,7 @@ public class AdminController {
     // 2. 회원 권한 수정 API
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/users/{userId}/role")
-    public ResponseEntity<?> updateUserRole(@PathVariable Long userId, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> updateUserRole(@PathVariable("userId") Long userId, @RequestBody Map<String, String> request) {
         try {
             String newRole = request.get("role");
             userService.updateUserRole(userId, newRole);
