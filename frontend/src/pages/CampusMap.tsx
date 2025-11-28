@@ -1,6 +1,7 @@
 // window kakao 선언부, React import 유지
 import React, { useEffect, useRef, useState } from "react";
 import Button from 'react-bootstrap/Button';
+import ToggleButton from "react-bootstrap/ToggleButton";
 import Form from 'react-bootstrap/Form';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container';
@@ -29,6 +30,61 @@ interface EventDetail {
   comments?: { user: string; content: string }[];
   imageUrl?: string;
 }
+
+// 일정 사이드바
+function ScheduleSidebar({ show, handleClose, events, onEventClick }: ScheduleSidebarProps) {
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = a.startsAt ? new Date(a.startsAt).getTime() : new Date(9999, 12);
+    const dateB = b.startsAt ? new Date(b.startsAt).getTime() : new Date(9999, 12);
+    return dateA - dateB;
+  });
+
+  return (
+    <Offcanvas
+      show={show}
+      onHide={handleClose}
+      key="end"
+      placement="end"
+      name="end"
+      scroll={true}
+      backdrop={false}
+      style={{ top: '56px', height: 'calc(100vh - 56px)' } }
+    >
+      <Offcanvas.Header closeButton>
+        <Offcanvas.Title>일정</Offcanvas.Title>
+      </Offcanvas.Header>
+      <Offcanvas.Body>
+        {sortedEvents.length === 0 ? (
+          <p>이벤트가 없습니다.</p>
+        ) : (
+          <div style={{ maxHeight: '100%', overflowY: 'auto' }}>
+            {sortedEvents.map(event => (
+              <div
+                key={event.id}
+                onClick={() => onEventClick(event)}
+                style={{
+                  padding: '10px',
+                  borderBottom: '1px solid #eee',
+                  cursor: 'pointer',
+                  backgroundColor: 'white', // Ensure background is white for visibility
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8f8f8')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+              >
+                <h5>{event.title}</h5>
+                <p style={{ fontSize: '0.9em', color: '#666' }}>
+                  {event.startsAt ? new Date(event.startsAt).toLocaleString() + '부터' : '날짜 없음'}<br />
+                  {event.endsAt ? new Date(event.endsAt).toLocaleString() + '까지' : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Offcanvas.Body>
+    </Offcanvas>
+  );
+}
+
 interface ScheduleSidebarProps {
   show: boolean;
   handleClose: () => void;
@@ -151,12 +207,10 @@ export default function CampusMap() {
         setEventDetails(ev);
         if (mapInstance && window.kakao) {
           mapInstance.panTo(new window.kakao.maps.LatLng(ev.lat, ev.lon));
-          // Optionally close sidebar after click
-          setShowSchedule(false);
         }
       }
     };
-  }, [eventList, mapInstance, setShowSchedule]);
+  }, [eventList, mapInstance]);
 
   // 번역
   useEffect(() => {
@@ -226,20 +280,32 @@ export default function CampusMap() {
     };
   }, [isAddMode]);
 
+  // 네비게이션 바
   function NavBar({ name }: { name: string | null }) {
     return (
       <Navbar className="bg-body-tertiary" bg="dark" data-bs-theme="dark">
         <Container fluid>
-          <Navbar.Brand>Campus Event Map</Navbar.Brand>
+          <Navbar.Brand>{t.main.title}</Navbar.Brand>
           <Navbar.Collapse className="justify-content-end">
-            <Button onClick={() => setIsAddMode(!isAddMode)} variant="primary">
+            <ToggleButton
+              id="toggle-check"
+              type="checkbox"
+              variant="secondary"
+              value="1"
+              className="me-2"
+              checked={showSchedule}
+              onChange={(e) => setShowSchedule(e.currentTarget.checked)}
+            >
+            일정 목록
+            </ToggleButton>
+            <Button variant="primary" onClick={() => setIsAddMode(!isAddMode)}>
               {isAddMode ? t.main.cancel : t.main.add_event}
             </Button>
             <Navbar.Text className="ms-5">
-              Signed in as: <strong>{name}</strong>
+              <strong>{name}</strong>
             </Navbar.Text>
             <Button onClick={handleLogout} variant="dark" className="ms-2">
-              Logout
+              {t.main.logout}
             </Button>
           </Navbar.Collapse>
         </Container>
@@ -251,55 +317,9 @@ export default function CampusMap() {
     setEventDetails(event);
     if (mapInstance && window.kakao) {
       mapInstance.panTo(new window.kakao.maps.LatLng(event.lat, event.lon));
-      // Optionally close sidebar after click
-      setShowSchedule(false);
     }
   };
 
-  // 일정 사이드바
-  function OffCanvasExample({ show, handleClose, events, onEventClick }: ScheduleSidebarProps) {
-    const sortedEvents = [...events].sort((a, b) => {
-      const dateA = a.startsAt ? new Date(a.startsAt).getTime() : new Date(9999, 12);
-      const dateB = b.startsAt ? new Date(b.startsAt).getTime() : new Date(9999, 12);
-      return dateA - dateB; // Newest first
-    });
-
-    return (
-      <Offcanvas show={show} onHide={handleClose} key="end" placement="end" name="end" scroll={true} backdrop={false}>
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>일정</Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body>
-          {sortedEvents.length === 0 ? (
-            <p>이벤트가 없습니다.</p>
-          ) : (
-            <div style={{ maxHeight: '100%', overflowY: 'auto' }}>
-              {sortedEvents.map(event => (
-                <div
-                  key={event.id}
-                  onClick={() => onEventClick(event)}
-                  style={{
-                    padding: '10px',
-                    borderBottom: '1px solid #eee',
-                    cursor: 'pointer',
-                    backgroundColor: 'white', // Ensure background is white for visibility
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8f8f8')}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'white')}
-                >
-                  <h5>{event.title}</h5>
-                  <p style={{ fontSize: '0.9em', color: '#666' }}>
-                    {event.startsAt ? new Date(event.startsAt).toLocaleString() + '부터' : '날짜 없음'}<br />
-                    {event.endsAt ? new Date(event.endsAt).toLocaleString() + '까지' : ''}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </Offcanvas.Body>
-      </Offcanvas>
-    );
-  }
 
   // 오버레이 불러오기
   function loadOverlays(map: any) {
@@ -320,8 +340,10 @@ export default function CampusMap() {
             <div class="campus-marker"
               style="
                 position: relative;
+                display: flex;
+                justify-content: center;
+                align-items: center;
                 width: 60px; height: 60px;
-                margin-left: -30px; margin-top: -60px;
                 cursor: pointer;
                 transition: transform 0.2s;
               "
@@ -447,7 +469,7 @@ export default function CampusMap() {
     <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
       {/* 헤더 */}
       <NavBar name={localStorage.getItem("username")} />
-      <div
+      {/* <div
         style={{
           padding: "12px 24px",
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -461,9 +483,6 @@ export default function CampusMap() {
         <h2 style={{ margin: 0 }}>{t.main.title}</h2>
 
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <Button variant="primary" onClick={() => setShowSchedule(true)} className="me-2">
-            일정
-          </Button>
           <Button
             onClick={() => setIsAddMode(!isAddMode)}
             variant="primary"
@@ -487,17 +506,17 @@ export default function CampusMap() {
             {t.main.logout}
           </button>
         </div>
-      </div>
-      <OffCanvasExample
+      </div> */}
+      <ScheduleSidebar
         show={showSchedule}
-        handleClose={() => setShowSchedule(false)}
         events={eventList} // eventList를 ScheduleSidebar에 전달
+        handleClose={() => setShowSchedule(false)}
         onEventClick={handleEventClickInSidebar} // 이벤트 클릭 핸들러 전달
       />
       {/* 지도 */}
       <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
 
-      {/* 추가 모드 안내 */}
+      {/* 이벤트 추가 모드 안내 메시지 */}
       {isAddMode && (
         <div
           style={{
