@@ -32,7 +32,7 @@ public class TranslateController {
 				throw new RuntimeException("Credentials.json 파일을 찾을 수 없습니다.");
 			}
 			JsonNode rootNode = mapper.readTree(inputStream);
-			return rootNode.get("keyString").asText();
+			return rootNode.get("googleCloud").get("keyString").asText();
 		} catch (IOException e) {
 			throw new RuntimeException("API 키 로드 중 오류 발생");
 		}
