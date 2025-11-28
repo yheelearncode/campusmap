@@ -3,6 +3,7 @@ import CampusMap from './pages/CampusMap';
 // import Login from './pages/Login';
 // import Register from './pages/Register';
 import Login from './pages/Login';
+import AdminPage from "./pages/AdminPage"
 import './App.css';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         {/* <Route path="/login" element={<Login />} /> */}
         {/* <Route path="/register" element={<Register />} /> */}
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </Router>
   );
