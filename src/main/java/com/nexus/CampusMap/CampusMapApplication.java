@@ -1,4 +1,4 @@
-package com.nexus.CampusMap;  // ← 패키지 변경!
+package com.nexus.CampusMap;  
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

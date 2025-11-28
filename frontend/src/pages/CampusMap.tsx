@@ -1,5 +1,6 @@
 // window kakao 선언부, React import 유지
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // (필요 시 수정) 챗봇 위젯 import
 import ChatWidget from "../components/ChatWidget";
@@ -105,6 +106,7 @@ const ui_translations = {
 };
 
 export default function CampusMap() {
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
@@ -162,6 +164,17 @@ export default function CampusMap() {
   const [translatedDescription, setTranslatedDescription] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
 
+  // ===========================
+  // ⭐ 추가된 프로필 수정 state
+  // ===========================
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const [profileForm, setProfileForm] = useState({
+    username: "",
+    currentPassword: "",
+    newPassword: "",
+  });
+
   // 유저 정보 로드
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -170,8 +183,74 @@ export default function CampusMap() {
 
     if (userId && username && role) {
       setCurrentUserInfo({ id: userId, name: username, role });
+      setProfileForm((prev) => ({ ...prev, username }));
     }
   }, []);
+
+  // ===========================
+  // ⭐ 프로필 입력 핸들러
+  // ===========================
+  const onProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProfileForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ===========================
+  // ⭐ 닉네임 변경 API
+  // ===========================
+  const handleUpdateNickname = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("로그인이 필요합니다.");
+
+    const res = await fetch("/api/users/me", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ username: profileForm.username }),
+    });
+
+    if (res.ok) {
+      alert("닉네임이 변경되었습니다!");
+      localStorage.setItem("username", profileForm.username);
+      window.location.reload();
+    } else {
+      alert("닉네임 변경 실패!");
+    }
+  };
+
+  // ===========================
+  // ⭐ 비밀번호 변경 API
+  // ===========================
+  const handleChangePassword = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("로그인이 필요합니다.");
+
+    if (!profileForm.currentPassword || !profileForm.newPassword) {
+      return alert("비밀번호를 입력하세요.");
+    }
+
+    const res = await fetch("/api/users/me/password", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        oldPassword: profileForm.currentPassword,
+        newPassword: profileForm.newPassword,
+      }),
+    });
+
+    if (res.ok) {
+      alert("비밀번호가 변경되었습니다!");
+      setShowProfileModal(false);
+      setProfileForm((prev) => ({ ...prev, currentPassword: "", newPassword: "" }));
+    } else {
+      alert("비밀번호 변경 실패!");
+    }
+  };
 
   // 권한 체크
   const canEditOrDelete = (event: EventDetail | null) => {
@@ -209,7 +288,6 @@ export default function CampusMap() {
   const handleEditEvent = () => {
     if (!eventDetails) return;
 
-    // datetime-local 형식 맞추기 (YYYY-MM-DDTHH:mm)
     const startsAt = eventDetails.startsAt ? eventDetails.startsAt.substring(0, 16) : "";
     const endsAt = eventDetails.endsAt ? eventDetails.endsAt.substring(0, 16) : "";
 
@@ -225,9 +303,9 @@ export default function CampusMap() {
     setEditImageFile(null);
     setCurrentImageUrl(eventDetails.imageUrl || null);
 
-    setIsEditMode(true);     // 수정 모달 열기
-    setShowForm(false);      // 등록 모달 닫기
-    setEventDetails(null);   // 상세 모달 닫기
+    setIsEditMode(true);
+    setShowForm(false);
+    setEventDetails(null);
   };
 
   // 수정 폼 입력 핸들러
@@ -235,14 +313,13 @@ export default function CampusMap() {
     setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // 수정 이미지 변경 핸들러
   const onEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setEditImageFile(e.target.files[0]);
     }
   };
 
-  // 수정 제출 (PUT)
+  // 수정 제출
   const handleUpdateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editForm.id) return;
@@ -256,7 +333,6 @@ export default function CampusMap() {
     const formData = new FormData();
     formData.append("title", editForm.title);
     formData.append("description", editForm.description);
-
     formData.append("lon", String(editForm.lon));
     formData.append("lat", String(editForm.lat));
     if (editForm.startsAt) formData.append("startsAt", editForm.startsAt);
@@ -289,7 +365,7 @@ export default function CampusMap() {
     }
   };
 
-  // 번역 (상세 모달 열릴 때)
+  // 번역
   useEffect(() => {
     if (!eventDetails) return;
 
@@ -340,11 +416,7 @@ export default function CampusMap() {
     };
 
     document.head.appendChild(script);
-
-    return () => {
-      document.head.removeChild(script);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => document.head.removeChild(script);
   }, [isAddMode]);
 
   // 오버레이 로드
@@ -387,7 +459,6 @@ export default function CampusMap() {
       });
   }
 
-  // 전역 상세보기 열기
   useEffect(() => {
     window.__openEventDetail = (id: number) => {
       const ev = eventList.find((e) => e.id === id);
@@ -395,7 +466,6 @@ export default function CampusMap() {
     };
   }, [eventList]);
 
-  // 입력 핸들러 (등록 모달)
   const onFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -404,7 +474,6 @@ export default function CampusMap() {
     if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
   };
 
-  // 이벤트 등록 (POST)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventPosition) return;
@@ -466,19 +535,22 @@ export default function CampusMap() {
         <h2>{t.main.title}</h2>
 
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <button
-            onClick={() => setIsAddMode(!isAddMode)}
-            style={{
-              padding: "8px 20px",
-              borderRadius: 8,
-              background: isAddMode ? "#ff6b6b" : "rgba(255,255,255,0.2)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            {isAddMode ? t.main.cancel : t.main.add_event}
-          </button>
+          {/* 이벤트 추가 버튼: 로그인한 경우만 표시 */}
+          {currentUserInfo && (
+            <button
+              onClick={() => setIsAddMode(!isAddMode)}
+              style={{
+                padding: "8px 20px",
+                borderRadius: 8,
+                background: isAddMode ? "#ff6b6b" : "rgba(255,255,255,0.2)",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {isAddMode ? t.main.cancel : t.main.add_event}
+            </button>
+          )}
 
           <span>
             {currentUserInfo ? `${currentUserInfo.name}님` : "사용자"}
@@ -531,13 +603,66 @@ export default function CampusMap() {
           >
             {t.main.logout}
           </button>
+          {/* 프로필 수정 버튼 */}
+          {currentUserInfo && (
+            <button
+              onClick={() => setShowProfileModal(true)}
+              style={{
+                padding: "8px 20px",
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: 8,
+                border: "none",
+                color: "white",
+              }}
+            >
+              프로필 수정
+            </button>
+          )}
+
+          {/* 로그아웃 버튼 */}
+          {currentUserInfo && (
+            <button
+              onClick={() => {
+                if (confirm(t.main.logout_check)) {
+                  localStorage.clear();
+                  window.location.href = "/login";
+                }
+              }}
+              style={{
+                padding: "8px 20px",
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: 8,
+                border: "none",
+                color: "white",
+              }}
+            >
+              {t.main.logout}
+            </button>
+          )}
+
+          {/* 로그인 버튼 (로그인하지 않은 경우만) */}
+          {!currentUserInfo && (
+            <button
+              onClick={() => navigate("/login")}
+              style={{
+                padding: "8px 20px",
+                background: "#667eea",
+                borderRadius: 8,
+                border: "none",
+                color: "white",
+                fontWeight: "bold",
+              }}
+            >
+              로그인
+            </button>
+          )}
         </div>
       </div>
 
       {/* 지도 */}
       <div ref={mapRef} style={{ flex: 1, width: "100%" }} />
 
-      {/* =============== 이벤트 등록 모달 =============== */}
+      {/* ================== 등록 모달 ================== */}
       {showForm && (
         <div
           style={{
@@ -602,7 +727,7 @@ export default function CampusMap() {
         </div>
       )}
 
-      {/* =============== 상세 모달 =============== */}
+      {/* ================== 상세 모달 ================== */}
       {eventDetails && (
         <div
           style={{
@@ -695,7 +820,7 @@ export default function CampusMap() {
         </div>
       )}
 
-      {/* =============== 이벤트 수정 모달 =============== */}
+      {/* ================== 수정 모달 ================== */}
       {isEditMode && (
         <div
           style={{
@@ -781,6 +906,130 @@ export default function CampusMap() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===========================
+          ⭐ 프로필 수정 모달 
+      =========================== */}
+      {showProfileModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 5000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 20,
+              borderRadius: 12,
+              width: 380,
+            }}
+          >
+            <h3 style={{ marginBottom: 16 }}>프로필 수정</h3>
+
+            {/* 닉네임 변경 */}
+            <div style={{ marginBottom: 20 }}>
+              <label>닉네임</label>
+              <input
+                name="username"
+                value={profileForm.username}
+                onChange={onProfileChange}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginTop: 5,
+                }}
+              />
+
+              <button
+                onClick={handleUpdateNickname}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  padding: "10px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#667eea",
+                  color: "white",
+                }}
+              >
+                닉네임 변경
+              </button>
+            </div>
+
+            <hr style={{ margin: "20px 0" }} />
+
+            {/* 비밀번호 변경 */}
+            <div>
+              <label>현재 비밀번호</label>
+              <input
+                type="password"
+                name="currentPassword"
+                value={profileForm.currentPassword}
+                onChange={onProfileChange}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginTop: 5,
+                }}
+              />
+
+              <label style={{ marginTop: 10, display: "block" }}>새 비밀번호</label>
+              <input
+                type="password"
+                name="newPassword"
+                value={profileForm.newPassword}
+                onChange={onProfileChange}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginTop: 5,
+                }}
+              />
+
+              <button
+                onClick={handleChangePassword}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  padding: "10px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#28a745",
+                  color: "white",
+                }}
+              >
+                비밀번호 변경
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowProfileModal(false)}
+              style={{
+                marginTop: 20,
+                width: "100%",
+                padding: "10px 0",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                background: "white",
+              }}
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}
