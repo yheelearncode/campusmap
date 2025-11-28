@@ -35,7 +35,6 @@ export default function Login() {
           localStorage.setItem('userId', data.userId);
           localStorage.setItem('username', data.username);
           localStorage.setItem('language', data.language);
-          alert('로그인 성공!');
           navigate('/map');
         } else {
           alert(data.error || '로그인 실패');
