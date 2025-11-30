@@ -588,23 +588,6 @@ export default function CampusMap() {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              if (confirm(t.main.logout_check)) {
-                localStorage.clear();
-                window.location.href = "/login";
-              }
-            }}
-            style={{
-              padding: "8px 20px",
-              background: "rgba(255,255,255,0.2)",
-              borderRadius: 8,
-              border: "none",
-              color: "white",
-            }}
-          >
-            {t.main.logout}
-          </button>
           {/* 프로필 수정 버튼 */}
           {currentUserInfo && (
             <button
