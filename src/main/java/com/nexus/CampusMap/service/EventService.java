@@ -3,6 +3,7 @@ package com.nexus.CampusMap.service;
 import com.nexus.CampusMap.entity.Event;
 import com.nexus.CampusMap.entity.User;
 import com.nexus.CampusMap.repository.EventRepository;
+import com.nexus.CampusMap.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -26,14 +27,37 @@ public class EventService {
     
     @Autowired
     private EventRepository eventRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    // ✅ 절대 경로 사용
+    // 절대 경로 사용
     private final String uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads/";
 
+    // 1. 전체 조회 (지도 표시용)
     public List<Event> getAllEvents() {
-        return eventRepository.findAllByOrderByCreatedAtDesc();
+        return eventRepository.findByApprovedTrueOrderByCreatedAtDesc();
+    }
+    
+    // [관리자용] 대기중인 이벤트 조회
+    public List<Event> getPendingEvents() {
+        return eventRepository.findByApprovedFalseOrderByCreatedAtDesc();
     }
 
+    // [관리자용] 이벤트 승인 처리
+    public void approveEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("이벤트 없음"));
+        event.setApproved(true);
+        eventRepository.save(event);
+    }
+    
+    // 2. 상세 조회
+    public Event getEventById(Long id) {
+        return eventRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("이벤트를 찾을 수 없습니다."));
+    }
+
+    // 3. 이벤트 생성
     public Event createEvent(Event event, MultipartFile imageFile, Long creatorId, String creatorName)throws IOException {
         
     	event.setCreatorId(creatorId);
@@ -48,12 +72,14 @@ public class EventService {
             }
         }
         
+        User creator = userRepository.findById(creatorId).orElseThrow();
+        if ("ADMIN".equals(creator.getRole()) || "STAFF".equals(creator.getRole())) {
+            event.setApproved(true); // 관리자 또는 스태프는 즉시 승인
+        } else {
+            event.setApproved(false); // 일반 유저는 대기 상태
+        }
+        
         return eventRepository.save(event);
-    }
-
-    public Event getEventById(Long id) {
-        return eventRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("이벤트를 찾을 수 없습니다."));
     }
 
     // 이미지 저장 메서드

@@ -49,7 +49,9 @@ public class Event {
     @Column
     private Integer likes = 0;
     
-    private Long authorId;
+    @Column(columnDefinition = "boolean default false")
+    private boolean approved;
+    
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -85,9 +87,10 @@ public class Event {
     public Integer getLikes() { return likes; }
     public void setLikes(Integer likes) { this.likes = likes; }
     
-    public Long getAuthorId() { return authorId; }
-    public void setAuthorId(Long authorId) { this.authorId = authorId; }
-    
     public String getCreatorName() { return creatorName; }
     public void setCreatorName(String creatorName) { this.creatorName = creatorName; }
+    
+    public boolean isApproved() { return approved; }
+    public void setApproved(boolean approved) { this.approved = approved; }
+    
 }
