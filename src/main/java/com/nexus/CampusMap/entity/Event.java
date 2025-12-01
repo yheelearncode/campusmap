@@ -30,6 +30,9 @@ public class Event {
 
     @Column
     private Long creatorId;
+    
+    @Column(name = "creator_name")
+    private String creatorName;
 
     @Column
     private String imageUrl; // 이미지 URL
@@ -45,6 +48,10 @@ public class Event {
 
     @Column
     private Integer likes = 0;
+    
+    @Column(columnDefinition = "boolean default false")
+    private boolean approved;
+    
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -79,4 +86,11 @@ public class Event {
 
     public Integer getLikes() { return likes; }
     public void setLikes(Integer likes) { this.likes = likes; }
+    
+    public String getCreatorName() { return creatorName; }
+    public void setCreatorName(String creatorName) { this.creatorName = creatorName; }
+    
+    public boolean isApproved() { return approved; }
+    public void setApproved(boolean approved) { this.approved = approved; }
+    
 }

@@ -8,6 +8,10 @@ import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 
 import {ui_translations} from './constants/translations'
+import { useNavigate } from "react-router-dom";
+
+// (필요 시 수정) 챗봇 위젯 import
+import ChatWidget from "../components/ChatWidget";
 
 declare global {
   interface Window {
@@ -16,9 +20,9 @@ declare global {
   }
 }
 
-const KAKAO_MAP_API_KEY = "08a2de71046acd72f7f1c67a474c9e17";
+const KAKAO_MAP_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
 
-// 상세 정보 모달용 타입
+// 이벤트 상세 타입
 interface EventDetail {
   id: number;
   title: string;
@@ -30,6 +34,8 @@ interface EventDetail {
   likes?: number;
   comments?: { user: string; content: string }[];
   imageUrl?: string;
+  creatorId?: number;
+  creatorName?: string;
 }
 
 interface ScheduleSidebarProps {
@@ -95,19 +101,57 @@ function ScheduleSidebar({ show, handleClose, events, onEventClick, t }: Schedul
 }
 
 export default function CampusMap() {
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // 추가 모달용 상태
   const [showForm, setShowForm] = useState(false);
   const [isAddMode, setIsAddMode] = useState(false);
   const [newEventPosition, setNewEventPosition] = useState<{ lat: number; lon: number } | null>(null);
   const [form, setForm] = useState({ title: "", description: "", startsAt: "", endsAt: "" });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  // 수정 모달용 상태
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    id: number | null;
+    title: string;
+    description: string;
+    startsAt: string;
+    endsAt: string;
+    lat: number;
+    lon: number;
+  }>({
+    id: null,
+    title: "",
+    description: "",
+    startsAt: "",
+    endsAt: "",
+    lat: 0,
+    lon: 0,
+  });
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+
+  // 지도/오버레이
   const [overlays, setOverlays] = useState<any[]>([]);
   const [mapInstance, setMapInstance] = useState<any>(null);
 
+  // 이벤트 목록 & 상세
   const [eventList, setEventList] = useState<EventDetail[]>([]);
   const [eventDetails, setEventDetails] = useState<EventDetail | null>(null);
   const [comment, setComment] = useState("");
+
+  // 유저 정보
+  const [currentUserInfo, setCurrentUserInfo] = useState<{
+    id: string;
+    name: string;
+    role: string;
+  } | null>(null);
+
+  // 언어
+  const userLang = (localStorage.getItem("language") as "ko" | "en" | "mn") || "ko";
+  const t = ui_translations[userLang] || ui_translations["ko"];
 
   const [translatedTitle, setTranslatedTitle] = useState("");
   const [translatedDescription, setTranslatedDescription] = useState("");
@@ -117,15 +161,35 @@ export default function CampusMap() {
 
   const userLang = (localStorage.getItem('language') as 'ko' | 'en' | 'mn') || 'ko';
   const t = ui_translations[userLang];
+  // ===========================
+  // ⭐ 추가된 프로필 수정 state
+  // ===========================
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
-  // 로그아웃 함수
-  const handleLogout = () => {
-    if (confirm(t.main.logout_check)) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("username");
-      window.location.href = "/login";
+  const [profileForm, setProfileForm] = useState({
+    username: "",
+    currentPassword: "",
+    newPassword: "",
+  });
+
+  // 유저 정보 로드
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("userRole");
+
+    if (userId && username && role) {
+      setCurrentUserInfo({ id: userId, name: username, role });
+      setProfileForm((prev) => ({ ...prev, username }));
     }
+  }, []);
+
+  // ===========================
+  // ⭐ 프로필 입력 핸들러
+  // ===========================
+  const onProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProfileForm((prev) => ({ ...prev, [name]: value }));
   };
 
   // 전역 함수 등록 (커스텀 오버레이 클릭 시 실행됨)
@@ -140,73 +204,228 @@ export default function CampusMap() {
       }
     };
   }, [eventList, mapInstance]);
+  // ===========================
+  // ⭐ 닉네임 변경 API
+  // ===========================
+  const handleUpdateNickname = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("로그인이 필요합니다.");
+
+    const res = await fetch("/api/users/me", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ username: profileForm.username }),
+    });
+
+    if (res.ok) {
+      alert("닉네임이 변경되었습니다!");
+      localStorage.setItem("username", profileForm.username);
+      window.location.reload();
+    } else {
+      alert("닉네임 변경 실패!");
+    }
+  };
+
+  // ===========================
+  // ⭐ 비밀번호 변경 API
+  // ===========================
+  const handleChangePassword = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("로그인이 필요합니다.");
+
+    if (!profileForm.currentPassword || !profileForm.newPassword) {
+      return alert("비밀번호를 입력하세요.");
+    }
+
+    const res = await fetch("/api/users/me/password", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        oldPassword: profileForm.currentPassword,
+        newPassword: profileForm.newPassword,
+      }),
+    });
+
+    if (res.ok) {
+      alert("비밀번호가 변경되었습니다!");
+      setShowProfileModal(false);
+      setProfileForm((prev) => ({ ...prev, currentPassword: "", newPassword: "" }));
+    } else {
+      alert("비밀번호 변경 실패!");
+    }
+  };
+
+  // 권한 체크
+  const canEditOrDelete = (event: EventDetail | null) => {
+    if (!event || !currentUserInfo) return false;
+
+    const isOwner = event.creatorName === currentUserInfo.name;
+    const isAdmin = currentUserInfo.role === "ADMIN";
+
+    return isOwner || isAdmin;
+  };
+
+  // 삭제
+  const handleDeleteEvent = async () => {
+    if (!eventDetails) return;
+    if (!confirm(`이벤트 '${eventDetails.title}'을 삭제하시겠습니까?`)) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const res = await fetch(`/api/events/${eventDetails.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      alert("삭제되었습니다");
+      setEventDetails(null);
+      if (mapInstance) loadOverlays(mapInstance);
+    } else {
+      alert("삭제 실패");
+    }
+  };
+
+  // 수정 버튼 클릭 -> 수정 모달 열기
+  const handleEditEvent = () => {
+    if (!eventDetails) return;
+
+    const startsAt = eventDetails.startsAt ? eventDetails.startsAt.substring(0, 16) : "";
+    const endsAt = eventDetails.endsAt ? eventDetails.endsAt.substring(0, 16) : "";
+
+    setEditForm({
+      id: eventDetails.id,
+      title: eventDetails.title,
+      description: eventDetails.description,
+      startsAt,
+      endsAt,
+      lat: eventDetails.lat,
+      lon: eventDetails.lon,
+    });
+    setEditImageFile(null);
+    setCurrentImageUrl(eventDetails.imageUrl || null);
+
+    setIsEditMode(true);
+    setShowForm(false);
+    setEventDetails(null);
+  };
+
+  // 수정 폼 입력 핸들러
+  const onEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const onEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setEditImageFile(e.target.files[0]);
+    }
+  };
+
+  // 수정 제출
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.id) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", editForm.title);
+    formData.append("description", editForm.description);
+    formData.append("lon", String(editForm.lon));
+    formData.append("lat", String(editForm.lat));
+    if (editForm.startsAt) formData.append("startsAt", editForm.startsAt);
+    if (editForm.endsAt) formData.append("endsAt", editForm.endsAt);
+    if (editImageFile) {
+      formData.append("image", editImageFile);
+    }
+
+    const res = await fetch(`/api/events/${editForm.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (res.ok) {
+      alert("수정 완료!");
+      setIsEditMode(false);
+      setEditImageFile(null);
+      setCurrentImageUrl(null);
+      if (mapInstance) loadOverlays(mapInstance);
+    } else {
+      try {
+        const data = await res.json();
+        alert(`수정 실패: ${data.error || "알 수 없는 오류"}`);
+      } catch {
+        alert("수정 실패(서버 응답 오류)");
+      }
+    }
+  };
 
   // 번역
   useEffect(() => {
-    if (eventDetails && eventDetails.description) {
-      setIsTranslating(true);
-      setTranslatedTitle("");
-      setTranslatedDescription("");
-      fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: eventDetails.title,
-          description: eventDetails.description,
-          targetLang: userLang,
-        }),
+    if (!eventDetails) return;
+
+    setIsTranslating(true);
+
+    fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: eventDetails.title,
+        description: eventDetails.description,
+        targetLang: userLang,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setTranslatedTitle(data.translatedTitle || eventDetails.title);
+        setTranslatedDescription(data.translatedDescription || eventDetails.description);
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.translatedTitle) {
-          setTranslatedTitle(data.translatedTitle);
-        }
-        if (data.translatedDescription) {
-          setTranslatedDescription(data.translatedDescription);
-        }
-      })
-      .catch(err => console.error("번역 실패: ", err))
       .finally(() => setIsTranslating(false));
-    }
   }, [eventDetails, userLang]);
 
-  // 지도 초기화
+  // Kakao map loader
   useEffect(() => {
     const script = document.createElement("script");
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false`;
     script.async = true;
 
     script.onload = () => {
-      if (window.kakao) {
-        window.kakao.maps.load(() => {
-          const map = new window.kakao.maps.Map(mapRef.current, {
-            center: new window.kakao.maps.LatLng(36.632473, 127.453143),
-            level: 4,
-          });
-
-          setMapInstance(map);
-          loadOverlays(map);
-
-          // 추가 모드일 때만 위치를 선택할 수 있도록
-          window.kakao.maps.event.addListener(map, "click", (e: any) => {
-            if (isAddMode) {
-              const latlng = e.latLng;
-              setNewEventPosition({ lat: latlng.getLat(), lon: latlng.getLng() });
-              setShowForm(true);
-              setIsAddMode(false);
-            }
-          });
+      window.kakao.maps.load(() => {
+        const map = new window.kakao.maps.Map(mapRef.current, {
+          center: new window.kakao.maps.LatLng(36.632473, 127.453143),
+          level: 4,
         });
-      }
+
+        setMapInstance(map);
+        loadOverlays(map);
+
+        window.kakao.maps.event.addListener(map, "click", (e: any) => {
+          if (isAddMode) {
+            const latlng = e.latLng;
+            setNewEventPosition({ lat: latlng.getLat(), lon: latlng.getLng() });
+            setShowForm(true);
+            setIsAddMode(false);
+          }
+        });
+      });
     };
 
     document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
+    return () => {document.head.removeChild(script)};
   }, [isAddMode]);
 
   // 네비게이션 바
@@ -251,12 +470,12 @@ export default function CampusMap() {
 
 
   // 오버레이 불러오기
+  // 오버레이 로드
   function loadOverlays(map: any) {
     fetch("/api/events")
       .then((res) => res.json())
       .then((events: EventDetail[]) => {
-        setEventList(events); // ← 전역에서 접근 가능하도록 저장
-
+        setEventList(events);
         overlays.forEach((o) => o.setMap(null));
 
         const newOverlays: any[] = [];
@@ -264,7 +483,6 @@ export default function CampusMap() {
         events.forEach((ev) => {
           const position = new window.kakao.maps.LatLng(ev.lat, ev.lon);
 
-          // onclick은 절대 style 안에 넣으면 안 됨!!
           const content = `
             <div class="campus-marker"
               style="
@@ -277,42 +495,12 @@ export default function CampusMap() {
                 transition: transform 0.2s;
               "
               onclick="window.__openEventDetail(${ev.id})"
-              onmouseover="this.style.transform='scale(1.2)'; this.style.zIndex='10';"
-              onmouseout="this.style.transform='scale(1)'; this.style.zIndex='1';"
+              style="cursor:pointer;width:60px;height:60px;"
             >
-              ${
-                ev.imageUrl
-                  ? `
-                <div style="
-                  width: 50px; height: 50px;
-                  border-radius: 14px; overflow: hidden;
-                  border: 3px solid white;
-                  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-                ">
-                  <img src="${ev.imageUrl}" alt="${ev.title}"
-                    style="width:100%; height:100%; object-fit:cover;"
-                  />
-                </div>`
-                  : `
-                <div style="
-                  width: 44px; height: 44px;
-                  background: #667eea; color: white;
-                  border-radius: 50%; border: 3px solid white;
-                  display: flex; align-items: center; justify-content: center;
-                  font-weight: bold; font-size: 14px;
-                  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-                ">${ev.title[0]}</div>`
-              }
-
-              <div style="
-                position: absolute;
-                bottom: -8px; left: 50%;
-                transform: translateX(-50%);
-                width: 0; height: 0;
-                border-left: 7px solid transparent;
-                border-right: 7px solid transparent;
-                border-top: 9px solid white;
-              "></div>
+              ${ev.imageUrl
+              ? `<img src="${ev.imageUrl}" style="width:100%;height:100%;border-radius:12px;object-fit:cover;" />`
+              : `<div style="background:#667eea;color:white;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;">${ev.title[0]}</div>`
+            }
             </div>
           `;
 
@@ -323,93 +511,95 @@ export default function CampusMap() {
             clickable: true,
           });
 
-          overlay.setMap(map);
           newOverlays.push(overlay);
+          overlay.setMap(map);
         });
 
         setOverlays(newOverlays);
-      })
-      .catch((err) => console.error("이벤트 로드 실패:", err));
+      });
   }
 
-  // form 입력 핸들러
+  useEffect(() => {
+    window.__openEventDetail = (id: number) => {
+      const ev = eventList.find((e) => e.id === id);
+      if (ev) setEventDetails(ev);
+    };
+  }, [eventList]);
+
   const onFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 이미지 업로드
   const onImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
   };
 
-  // 이벤트 등록
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventPosition) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return alert("로그인이 필요합니다.");
 
     const formData = new FormData();
     formData.append("title", form.title);
     formData.append("description", form.description);
     formData.append("lat", String(newEventPosition.lat));
     formData.append("lon", String(newEventPosition.lon));
-    formData.append("creatorId", "1");
-
     if (form.startsAt) formData.append("startsAt", form.startsAt);
     if (form.endsAt) formData.append("endsAt", form.endsAt);
     if (imageFile) formData.append("image", imageFile);
 
     const res = await fetch("/api/events", {
       method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
 
-    if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json(); 
+
+      if (data.isApproved) {
+        alert("등록이 완료되었습니다! 지도에 바로 표시됩니다.");
+      } else {
+        alert("등록 요청이 완료되었습니다.\n관리자 승인 후 지도에 표시됩니다.");
+      }
+      setShowForm(false);
+      setForm({ title: "", description: "", startsAt: "", endsAt: "" });
+      setImageFile(null);
+      setNewEventPosition(null);
+      if (mapInstance) loadOverlays(mapInstance);
+    } else {
       alert("등록 실패");
-      return;
     }
-
-    alert("등록 완료!");
-    setShowForm(false);
-    setForm({ title: "", description: "", startsAt: "", endsAt: "" });
-    setNewEventPosition(null);
-    setImageFile(null);
-
-    if (mapInstance) loadOverlays(mapInstance);
   };
-
-  const handleAddComment = () => {
-    if (!eventDetails || !comment.trim()) return;
-
-    setEventDetails({
-      ...eventDetails,
-      comments: [...(eventDetails.comments ?? []), { user: "me", content: comment }],
-    });
-
-    setComment("");
-  };
-
-  // ============================
-  //   렌더링
-  // ============================
 
   return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+      }}
+    >
+      {/* 🔹 챗봇 */}
+      <ChatWidget />
+
       {/* 헤더 */}
       <NavBar name={localStorage.getItem("username")} />
       {/* <div
         style={{
           padding: "12px 24px",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "linear-gradient(135deg, #667eea, #764ba2)",
           color: "white",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}
       >
-        <h2 style={{ margin: 0 }}>{t.main.title}</h2>
+        <h2>{t.main.title}</h2>
 
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
           <Button
@@ -418,22 +608,110 @@ export default function CampusMap() {
           >
             {isAddMode ? t.main.cancel : t.main.add_event}
           </Button>
+          {/* 이벤트 추가 버튼: 로그인한 경우만 표시 */}
+          {currentUserInfo && (
+            <button
+              onClick={() => setIsAddMode(!isAddMode)}
+              style={{
+                padding: "8px 20px",
+                borderRadius: 8,
+                background: isAddMode ? "#ff6b6b" : "rgba(255,255,255,0.2)",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {isAddMode ? t.main.cancel : t.main.add_event}
+            </button>
+          )}
 
-          <span>{localStorage.getItem("username") || "사용자"}님</span>
+          <span>
+            {currentUserInfo ? `${currentUserInfo.name}님` : "사용자"}
+            {currentUserInfo && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  background: currentUserInfo.role === "ADMIN" ? "#ffc107" : "#28a745",
+                  fontSize: 12,
+                }}
+              >
+                {currentUserInfo.role}
+              </span>
+            )}
+          </span>
 
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: "8px 20px",
-              border: "none",
-              borderRadius: "8px",
-              background: "rgba(255,255,255,0.2)",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            {t.main.logout}
-          </button>
+          {currentUserInfo && currentUserInfo.role === "ADMIN" && (
+            <button
+              onClick={() => navigate("/admin")}
+              style={{
+                padding: "8px 20px",
+                borderRadius: "8px",
+                border: "none",
+                fontWeight: "600",
+                cursor: "pointer",
+                background: "#2d3436",
+                color: "white",
+              }}
+            >
+              관리자 페이지
+            </button>
+          )}
+
+          {/* 프로필 수정 버튼 */}
+          {currentUserInfo && (
+            <button
+              onClick={() => setShowProfileModal(true)}
+              style={{
+                padding: "8px 20px",
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: 8,
+                border: "none",
+                color: "white",
+              }}
+            >
+              프로필 수정
+            </button>
+          )}
+
+          {/* 로그아웃 버튼 */}
+          {currentUserInfo && (
+            <button
+              onClick={() => {
+                if (confirm(t.main.logout_check)) {
+                  localStorage.clear();
+                  window.location.href = "/login";
+                }
+              }}
+              style={{
+                padding: "8px 20px",
+                background: "rgba(255,255,255,0.2)",
+                borderRadius: 8,
+                border: "none",
+                color: "white",
+              }}
+            >
+              {t.main.logout}
+            </button>
+          )}
+
+          {/* 로그인 버튼 (로그인하지 않은 경우만) */}
+          {!currentUserInfo && (
+            <button
+              onClick={() => navigate("/login")}
+              style={{
+                padding: "8px 20px",
+                background: "#667eea",
+                borderRadius: 8,
+                border: "none",
+                color: "white",
+                fontWeight: "bold",
+              }}
+            >
+              로그인
+            </button>
+          )}
         </div>
       </div> */}
       <ScheduleSidebar
@@ -444,7 +722,7 @@ export default function CampusMap() {
         t={t}
       />
       {/* 지도 */}
-      <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
+      <div ref={mapRef} style={{ flex: 1, width: "100%" }} />
 
       {/* 이벤트 추가 모드 안내 메시지 */}
       {isAddMode && (
@@ -467,53 +745,52 @@ export default function CampusMap() {
       )}
 
       {/* 이벤트 등록 모달 */}
+      {/* ================== 등록 모달 ================== */}
       {showForm && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.45)",
+            background: "rgba(0,0,0,0.4)",
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
-            zIndex: 1000,
+            alignItems: "center",
+            zIndex: 2000,
           }}
         >
           <div
             style={{
               background: "white",
-              padding: 28,
-              borderRadius: 16,
-              width: "100%",
-              maxWidth: 480,
-              boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+              padding: 20,
+              borderRadius: 12,
+              width: 400,
             }}
           >
-            <h2 style={{ marginBottom: 16 }}>{t.add.title}</h2>
+            <h2>{t.add.title}</h2>
 
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input
                 name="title"
                 placeholder={t.add.title_placeholder}
                 value={form.title}
                 onChange={onFormChange}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
               />
 
               <textarea
                 name="description"
                 placeholder={t.add.description_placeholder}
-                rows={4}
                 value={form.description}
                 onChange={onFormChange}
-                style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+                rows={4}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
               />
 
               <Form.Control type="file" accept="image/*" onChange={onImageChange} />
 
               <div style={{ display: "flex", gap: 10 }}>
-                <input name="startsAt" type="datetime-local" value={form.startsAt} onChange={onFormChange} />
-                <input name="endsAt" type="datetime-local" value={form.endsAt} onChange={onFormChange} />
+                <input type="datetime-local" name="startsAt" value={form.startsAt} onChange={onFormChange} />
+                <input type="datetime-local" name="endsAt" value={form.endsAt} onChange={onFormChange} />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
@@ -521,6 +798,12 @@ export default function CampusMap() {
                   {t.add.cancel}
                 </Button>
                 <Button type="submit" variant="primary">
+                </button>
+
+                <button
+                  type="submit"
+                  style={{ background: "#667eea", color: "white", padding: "8px 15px" }}
+                >
                   {t.add.post}
                 </Button>
               </div>
@@ -529,7 +812,7 @@ export default function CampusMap() {
         </div>
       )}
 
-      {/* 상세정보 모달 */}
+      {/* ================== 상세 모달 ================== */}
       {eventDetails && (
         <div
           style={{
@@ -539,7 +822,7 @@ export default function CampusMap() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 1200,
+            zIndex: 3000,
           }}
         >
           <div
@@ -548,23 +831,20 @@ export default function CampusMap() {
               padding: 20,
               borderRadius: 12,
               width: "90%",
-              maxWidth: 580,
+              maxWidth: 550,
               maxHeight: "90vh",
               overflowY: "auto",
             }}
           >
-            <h3>{isTranslating ? "" : translatedTitle}</h3>
+            <h3>{isTranslating ? "번역 중..." : translatedTitle}</h3>
 
             {eventDetails.imageUrl && (
               <img
                 src={eventDetails.imageUrl}
-                alt=""
                 style={{
                   width: "100%",
-                  borderRadius: 12,
+                  borderRadius: 10,
                   marginBottom: 12,
-                  objectFit: "cover",
-                  maxHeight: 350,
                 }}
               />
             )}
@@ -576,17 +856,273 @@ export default function CampusMap() {
 
 
             <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
+            <p>{isTranslating ? "..." : translatedDescription}</p>
 
-            <div style={{ margin: "10px 0" }}>
-              <b>{t.detail.likes}: {eventDetails.likes ?? 0}</b>
-            </div>
+            <p style={{ color: "#666", marginTop: 10 }}>
+              작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
+            </p>
+
+            <p>
+              {t.detail.likes}: <b>{eventDetails.likes ?? 0}</b>
+            </p>
+
+            {canEditOrDelete(eventDetails) && (
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
+                <button
+                  onClick={handleEditEvent}
+                  style={{
+                    background: "#007bff",
+                    color: "white",
+                    padding: "8px 15px",
+                    borderRadius: 8,
+                    border: "none",
+                  }}
+                >
+                  수정
+                </button>
+
+                <button
+                  onClick={handleDeleteEvent}
+                  style={{
+                    background: "#dc3545",
+                    color: "white",
+                    padding: "8px 15px",
+                    borderRadius: 8,
+                    border: "none",
+                  }}
+                >
+                  삭제
+                </button>
+              </div>
+            )}
 
             <Button
               onClick={() => setEventDetails(null)}
               variant="outline-secondary"
+              style={{
+                marginTop: 20,
+                padding: "10px 15px",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                background: "white",
+              }}
             >
               {t.detail.close}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ================== 수정 모달 ================== */}
+      {isEditMode && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 2500,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 20,
+              borderRadius: 12,
+              width: 400,
+            }}
+          >
+            <h2>이벤트 수정</h2>
+
+            <form onSubmit={handleUpdateSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <input
+                name="title"
+                placeholder="제목"
+                value={editForm.title}
+                onChange={onEditFormChange}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+
+              <textarea
+                name="description"
+                placeholder="내용"
+                value={editForm.description}
+                onChange={onEditFormChange}
+                rows={4}
+                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+
+              {currentImageUrl && (
+                <div style={{ marginBottom: 8 }}>
+                  <p style={{ fontSize: 14, color: "#666", marginBottom: 4 }}>현재 이미지:</p>
+                  <img
+                    src={currentImageUrl}
+                    style={{
+                      width: "100%",
+                      maxHeight: 200,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                    }}
+                  />
+                </div>
+              )}
+
+              <input type="file" accept="image/*" onChange={onEditImageChange} />
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <input
+                  type="datetime-local"
+                  name="startsAt"
+                  value={editForm.startsAt}
+                  onChange={onEditFormChange}
+                />
+                <input
+                  type="datetime-local"
+                  name="endsAt"
+                  value={editForm.endsAt}
+                  onChange={onEditFormChange}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={() => setIsEditMode(false)}>
+                  취소
+                </button>
+
+                <button
+                  type="submit"
+                  style={{ background: "#007bff", color: "white", padding: "8px 15px" }}
+                >
+                  수정 완료
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===========================
+          ⭐ 프로필 수정 모달 
+      =========================== */}
+      {showProfileModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 5000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: 20,
+              borderRadius: 12,
+              width: 380,
+            }}
+          >
+            <h3 style={{ marginBottom: 16 }}>프로필 수정</h3>
+
+            {/* 닉네임 변경 */}
+            <div style={{ marginBottom: 20 }}>
+              <label>닉네임</label>
+              <input
+                name="username"
+                value={profileForm.username}
+                onChange={onProfileChange}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginTop: 5,
+                }}
+              />
+
+              <button
+                onClick={handleUpdateNickname}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  padding: "10px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#667eea",
+                  color: "white",
+                }}
+              >
+                닉네임 변경
+              </button>
+            </div>
+
+            <hr style={{ margin: "20px 0" }} />
+
+            {/* 비밀번호 변경 */}
+            <div>
+              <label>현재 비밀번호</label>
+              <input
+                type="password"
+                name="currentPassword"
+                value={profileForm.currentPassword}
+                onChange={onProfileChange}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginTop: 5,
+                }}
+              />
+
+              <label style={{ marginTop: 10, display: "block" }}>새 비밀번호</label>
+              <input
+                type="password"
+                name="newPassword"
+                value={profileForm.newPassword}
+                onChange={onProfileChange}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginTop: 5,
+                }}
+              />
+
+              <button
+                onClick={handleChangePassword}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  padding: "10px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#28a745",
+                  color: "white",
+                }}
+              >
+                비밀번호 변경
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowProfileModal(false)}
+              style={{
+                marginTop: 20,
+                width: "100%",
+                padding: "10px 0",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                background: "white",
+              }}
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}

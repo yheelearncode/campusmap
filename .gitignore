@@ -38,3 +38,6 @@ out/
 
 # Credentials
 credentials.json
+
+.env
+src/main/resources/application-keys.properties

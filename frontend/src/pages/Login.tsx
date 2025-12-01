@@ -9,6 +9,7 @@ export default function Login() {
     name: '',
     confirmPassword: '',
     language: 'ko',
+    role: ''
   });
   const navigate = useNavigate();
 
@@ -22,7 +23,7 @@ export default function Login() {
     if (isLogin) {
       // 로그인
       try {
-        const res = await fetch('/api/auth/login', {
+        const res = await fetch('/api/users/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: form.email, password: form.password })
@@ -34,7 +35,9 @@ export default function Login() {
           localStorage.setItem('token', data.token);
           localStorage.setItem('userId', data.userId);
           localStorage.setItem('username', data.username);
-          localStorage.setItem('language', data.language);
+          localStorage.setItem('userRole', data.userRole);
+          localStorage.setItem('language', data.language || 'ko');
+          alert('로그인 성공!');
           navigate('/map');
         } else {
           alert(data.error || '로그인 실패');
@@ -51,14 +54,15 @@ export default function Login() {
       }
 
       try {
-        const res = await fetch('/api/auth/signup', {
+        const res = await fetch('/api/users/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: form.email,
             password: form.password,
             username: form.name,
-            language: form.language
+            language: form.language,
+            role: form.role
           })
         });
 
@@ -67,7 +71,7 @@ export default function Login() {
         if (res.ok) {
           alert('회원가입 성공! 로그인해주세요.');
           setIsLogin(true);
-          setForm({ email: '', password: '', name: '', language: '', confirmPassword: '' });
+          setForm({ email: '', password: '', name: '', language: '', confirmPassword: '', role: '' });
         } else {
           alert(data.error || '회원가입 실패');
         }
@@ -135,18 +139,19 @@ export default function Login() {
             </div>
           )}
 
-          {!isLogin && (<div style={{ marginBottom: 16 }}>
+          {!isLogin && (
+            <div style={{ marginBottom: 16 }}>
               <label style={{
                 display: 'block',
                 marginBottom: 8,
                 fontWeight: '500',
                 color: '#555'
               }}>
-                언어
+                사용자 역할
               </label>
               <select
-                name="language"
-                value={form.language}
+                name="role"
+                value={form.role}
                 onChange={handleChange}
                 required={!isLogin}
                 style={{
@@ -158,11 +163,43 @@ export default function Login() {
                   boxSizing: 'border-box'
                 }}
               >
-                <option value="ko">한국어</option>
-                <option value="en">English</option>
-                <option value="mn">Монгол</option>
+                <option value="" disabled>역할을 선택하세요 *</option>
+
+                <option value="USER">일반 사용자</option>
+                <option value="STAFF">스태프</option>
+                <option value="ADMIN">관리자</option>
               </select>
             </div>
+          )}
+
+          {!isLogin && (<div style={{ marginBottom: 16 }}>
+            <label style={{
+              display: 'block',
+              marginBottom: 8,
+              fontWeight: '500',
+              color: '#555'
+            }}>
+              언어
+            </label>
+            <select
+              name="language"
+              value={form.language}
+              onChange={handleChange}
+              required={!isLogin}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            >
+              <option value="ko">한국어</option>
+              <option value="en">English</option>
+              <option value="mn">Монгол</option>
+            </select>
+          </div>
           )}
 
           <div style={{ marginBottom: 16 }}>
@@ -272,7 +309,7 @@ export default function Login() {
           <button
             onClick={() => {
               setIsLogin(!isLogin);
-              setForm({ email: '', password: '', name: '', language: '', confirmPassword: '' });
+              setForm({ email: '', password: '', name: '', confirmPassword: '', role: '', language: '' });
             }}
             style={{
               marginLeft: '8px',
