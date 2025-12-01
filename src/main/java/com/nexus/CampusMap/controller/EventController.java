@@ -46,7 +46,7 @@ public class EventController {
 
     // 이벤트 생성 (FormData로 받음)
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createEvent(
             @RequestParam("title") String title,
             @RequestParam("description") String description,
@@ -82,10 +82,16 @@ public class EventController {
             Event savedEvent = eventService.createEvent(event, image, currentUserId, currentUsername);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "이벤트 등록 성공");
             response.put("creatorName", currentUsername);
             response.put("eventId", savedEvent.getId());
             response.put("imageUrl", savedEvent.getImageUrl());
+            response.put("isApproved", savedEvent.isApproved());
+            
+            if (savedEvent.isApproved()) {
+                response.put("message", "이벤트 등록 성공");
+           } else {
+                response.put("message", "이벤트 등록 요청 성공 (관리자 승인 대기)");
+           }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

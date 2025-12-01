@@ -5,8 +5,6 @@ import { useNavigate } from "react-router-dom";
 // (필요 시 수정) 챗봇 위젯 import
 import ChatWidget from "../components/ChatWidget";
 
-import { useNavigate } from "react-router-dom";
-
 declare global {
   interface Window {
     kakao: any;
@@ -108,8 +106,6 @@ const ui_translations = {
 export default function CampusMap() {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
-
-  const navigate = useNavigate();
 
   // 추가 모달용 상태
   const [showForm, setShowForm] = useState(false);
@@ -257,7 +253,7 @@ export default function CampusMap() {
     if (!event || !currentUserInfo) return false;
 
     const isOwner = event.creatorName === currentUserInfo.name;
-    const isAdmin = currentUserInfo.role === "ADMIN" || currentUserInfo.role === "STAFF";
+    const isAdmin = currentUserInfo.role === "ADMIN";
 
     return isOwner || isAdmin;
   };
@@ -416,7 +412,7 @@ export default function CampusMap() {
     };
 
     document.head.appendChild(script);
-    return () => document.head.removeChild(script);
+    return () => {document.head.removeChild(script)};
   }, [isAddMode]);
 
   // 오버레이 로드
@@ -497,7 +493,13 @@ export default function CampusMap() {
     });
 
     if (res.ok) {
-      alert("등록 완료!");
+      const data = await res.json(); 
+
+      if (data.isApproved) {
+        alert("등록이 완료되었습니다! 지도에 바로 표시됩니다.");
+      } else {
+        alert("등록 요청이 완료되었습니다.\n관리자 승인 후 지도에 표시됩니다.");
+      }
       setShowForm(false);
       setForm({ title: "", description: "", startsAt: "", endsAt: "" });
       setImageFile(null);
@@ -586,23 +588,6 @@ export default function CampusMap() {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              if (confirm(t.main.logout_check)) {
-                localStorage.clear();
-                window.location.href = "/login";
-              }
-            }}
-            style={{
-              padding: "8px 20px",
-              background: "rgba(255,255,255,0.2)",
-              borderRadius: 8,
-              border: "none",
-              color: "white",
-            }}
-          >
-            {t.main.logout}
-          </button>
           {/* 프로필 수정 버튼 */}
           {currentUserInfo && (
             <button
