@@ -1,5 +1,13 @@
 // window kakao 선언부, React import 유지
 import React, { useEffect, useRef, useState } from "react";
+import Button from 'react-bootstrap/Button';
+import ToggleButton from "react-bootstrap/ToggleButton";
+import Form from 'react-bootstrap/Form';
+import Offcanvas from 'react-bootstrap/Offcanvas';
+import Container from 'react-bootstrap/Container';
+import Navbar from 'react-bootstrap/Navbar';
+
+import {ui_translations} from './constants/translations'
 import { useNavigate } from "react-router-dom";
 
 // (필요 시 수정) 챗봇 위젯 import
@@ -30,78 +38,67 @@ interface EventDetail {
   creatorName?: string;
 }
 
-// UI 다국어
-const ui_translations = {
-  ko: {
-    main: {
-      title: "캠퍼스 이벤트 지도",
-      add_event: "이벤트 추가",
-      add_guide: "지도에서 이벤트 위치를 클릭하세요",
-      logout: "로그아웃",
-      logout_check: "로그아웃 하시겠습니까?",
-      cancel: "취소",
-    },
-    add: {
-      title: "이벤트 등록",
-      title_placeholder: "제목 *",
-      description_placeholder: "내용 *",
-      post: "등록",
-      cancel: "취소",
-      success: "등록 완료!",
-      fail: "등록 실패",
-    },
-    detail: {
-      likes: "추천",
-      close: "닫기",
-    },
-  },
-  en: {
-    main: {
-      title: "Campus Event Map",
-      add_event: "Add Event",
-      add_guide: "Click the event location on the map",
-      logout: "Logout",
-      logout_check: "Logout?",
-      cancel: "Cancel",
-    },
-    add: {
-      title: "Post Event",
-      title_placeholder: "Title *",
-      description_placeholder: "Description *",
-      post: "Post",
-      cancel: "Cancel",
-      success: "Post Done!",
-      fail: "Post Failed",
-    },
-    detail: {
-      likes: "Likes",
-      close: "Close",
-    },
-  },
-  mn: {
-    main: {
-      title: "캠퍼스 이벤트 지도(mn)",
-      add_event: "이벤트 추가(mn)",
-      add_guide: "지도에서 이벤트 위치를 클릭하세요(mn)",
-      logout: "로그아웃(mn)",
-      logout_check: "로그아웃 하시겠습니까?(mn)",
-      cancel: "취소(mn)",
-    },
-    add: {
-      title: "이벤트 등록(mn)",
-      title_placeholder: "제목 *(mn)",
-      description_placeholder: "내용 *(mn)",
-      post: "등록(mn)",
-      cancel: "취소(mn)",
-      success: "등록 완료!(mn)",
-      fail: "등록 실패(mn)",
-    },
-    detail: {
-      likes: "추천(mn)",
-      close: "닫기(mn)",
-    },
-  },
-};
+interface ScheduleSidebarProps {
+  show: boolean;
+  handleClose: () => void;
+  events: EventDetail[];
+  onEventClick: (event: EventDetail) => void;
+  t: any;
+}
+
+// 일정 사이드바
+function ScheduleSidebar({ show, handleClose, events, onEventClick, t }: ScheduleSidebarProps) {
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = a.startsAt ? new Date(a.startsAt).getTime() : new Date(9999, 12);
+    const dateB = b.startsAt ? new Date(b.startsAt).getTime() : new Date(9999, 12);
+    return dateA - dateB;
+  });
+
+  return (
+    <Offcanvas
+      show={show}
+      onHide={handleClose}
+      key="end"
+      placement="end"
+      name="end"
+      scroll={true}
+      backdrop={false}
+      style={{ top: '56px', height: 'calc(100vh - 56px)' } }
+    >
+      <Offcanvas.Header closeButton>
+        <Offcanvas.Title>{t.main.event}</Offcanvas.Title>
+      </Offcanvas.Header>
+      <Offcanvas.Body>
+        {sortedEvents.length === 0 ? (
+          <p>이벤트가 없습니다.</p>
+        ) : (
+          <div style={{ maxHeight: '100%', overflowY: 'auto' }}>
+            {sortedEvents.map(event => (
+              <div
+                key={event.id}
+                onClick={() => onEventClick(event)}
+                style={{
+                  padding: '10px',
+                  borderBottom: '1px solid #eee',
+                  cursor: 'pointer',
+                  backgroundColor: 'white', // Ensure background is white for visibility
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8f8f8')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'white')}
+              >
+                <h5>{event.title}</h5>
+                <p style={{ fontSize: '0.9em', color: '#666' }}>
+                  {event.startsAt ? t.detail.from_prefix + new Date(event.startsAt).toLocaleString() + t.detail.from_suffix : t.detail.no_date}<br />
+                  {event.endsAt ? t.detail.to_prefix + new Date(event.endsAt).toLocaleString() + t.detail.to_suffix : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Offcanvas.Body>
+    </Offcanvas>
+  );
+}
 
 export default function CampusMap() {
   const navigate = useNavigate();
@@ -160,6 +157,10 @@ export default function CampusMap() {
   const [translatedDescription, setTranslatedDescription] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
 
+  const [showSchedule, setShowSchedule] = useState(false);
+
+  const userLang = (localStorage.getItem('language') as 'ko' | 'en' | 'mn') || 'ko';
+  const t = ui_translations[userLang];
   // ===========================
   // ⭐ 추가된 프로필 수정 state
   // ===========================
@@ -191,6 +192,18 @@ export default function CampusMap() {
     setProfileForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 전역 함수 등록 (커스텀 오버레이 클릭 시 실행됨)
+  useEffect(() => {
+    window.__openEventDetail = (id: number) => {
+      const ev = eventList.find((e) => e.id === id);
+      if (ev) {
+        setEventDetails(ev);
+        if (mapInstance && window.kakao) {
+          mapInstance.panTo(new window.kakao.maps.LatLng(ev.lat, ev.lon));
+        }
+      }
+    };
+  }, [eventList, mapInstance]);
   // ===========================
   // ⭐ 닉네임 변경 API
   // ===========================
@@ -415,6 +428,48 @@ export default function CampusMap() {
     return () => {document.head.removeChild(script)};
   }, [isAddMode]);
 
+  // 네비게이션 바
+  function NavBar({ name }: { name: string | null }) {
+    return (
+      <Navbar className="bg-body-tertiary" bg="dark" data-bs-theme="dark">
+        <Container fluid>
+          <Navbar.Brand><strong>{t.main.title}</strong></Navbar.Brand>
+          <Navbar.Collapse className="justify-content-end">
+            <ToggleButton
+              id="toggle-check"
+              type="checkbox"
+              variant="secondary"
+              value="1"
+              className="me-2"
+              checked={showSchedule}
+              onChange={(e) => setShowSchedule(e.currentTarget.checked)}
+            >
+            {t.main.event_list}
+            </ToggleButton>
+            <Button variant="primary" onClick={() => setIsAddMode(!isAddMode)}>
+              {isAddMode ? t.main.cancel : t.main.add_event}
+            </Button>
+            <Navbar.Text className="ms-5">
+              <strong>{name}</strong>
+            </Navbar.Text>
+            <Button onClick={handleLogout} variant="dark" className="ms-2">
+              {t.main.logout}
+            </Button>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
+    );
+  }
+
+  const handleEventClickInSidebar = (event: EventDetail) => {
+    setEventDetails(event);
+    if (mapInstance && window.kakao) {
+      mapInstance.panTo(new window.kakao.maps.LatLng(event.lat, event.lon));
+    }
+  };
+
+
+  // 오버레이 불러오기
   // 오버레이 로드
   function loadOverlays(map: any) {
     fetch("/api/events")
@@ -430,6 +485,15 @@ export default function CampusMap() {
 
           const content = `
             <div class="campus-marker"
+              style="
+                position: relative;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 60px; height: 60px;
+                cursor: pointer;
+                transition: transform 0.2s;
+              "
               onclick="window.__openEventDetail(${ev.id})"
               style="cursor:pointer;width:60px;height:60px;"
             >
@@ -524,7 +588,8 @@ export default function CampusMap() {
       <ChatWidget />
 
       {/* 헤더 */}
-      <div
+      <NavBar name={localStorage.getItem("username")} />
+      {/* <div
         style={{
           padding: "12px 24px",
           background: "linear-gradient(135deg, #667eea, #764ba2)",
@@ -537,6 +602,12 @@ export default function CampusMap() {
         <h2>{t.main.title}</h2>
 
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <Button
+            onClick={() => setIsAddMode(!isAddMode)}
+            variant="primary"
+          >
+            {isAddMode ? t.main.cancel : t.main.add_event}
+          </Button>
           {/* 이벤트 추가 버튼: 로그인한 경우만 표시 */}
           {currentUserInfo && (
             <button
@@ -642,11 +713,38 @@ export default function CampusMap() {
             </button>
           )}
         </div>
-      </div>
-
+      </div> */}
+      <ScheduleSidebar
+        show={showSchedule}
+        events={eventList} // eventList를 ScheduleSidebar에 전달
+        handleClose={() => setShowSchedule(false)}
+        onEventClick={handleEventClickInSidebar} // 이벤트 클릭 핸들러 전달
+        t={t}
+      />
       {/* 지도 */}
       <div ref={mapRef} style={{ flex: 1, width: "100%" }} />
 
+      {/* 이벤트 추가 모드 안내 메시지 */}
+      {isAddMode && (
+        <div
+          style={{
+            position: "absolute",
+            top: 80,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#667eea",
+            color: "white",
+            padding: "12px 24px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            zIndex: 700,
+          }}
+        >
+          {t.main.add_guide}
+        </div>
+      )}
+
+      {/* 이벤트 등록 모달 */}
       {/* ================== 등록 모달 ================== */}
       {showForm && (
         <div
@@ -688,7 +786,7 @@ export default function CampusMap() {
                 style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
               />
 
-              <input type="file" accept="image/*" onChange={onImageChange} />
+              <Form.Control type="file" accept="image/*" onChange={onImageChange} />
 
               <div style={{ display: "flex", gap: 10 }}>
                 <input type="datetime-local" name="startsAt" value={form.startsAt} onChange={onFormChange} />
@@ -696,8 +794,10 @@ export default function CampusMap() {
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button type="button" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="light" onClick={() => setShowForm(false)}>
                   {t.add.cancel}
+                </Button>
+                <Button type="submit" variant="primary">
                 </button>
 
                 <button
@@ -705,7 +805,7 @@ export default function CampusMap() {
                   style={{ background: "#667eea", color: "white", padding: "8px 15px" }}
                 >
                   {t.add.post}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -749,6 +849,13 @@ export default function CampusMap() {
               />
             )}
 
+            <p style={{ color: '#666' }}>
+              {eventDetails.startsAt ? t.detail.from_prefix + new Date(eventDetails.startsAt).toLocaleString() + t.detail.from_suffix : ""} <br />
+              {eventDetails.endsAt ? t.detail.to_prefix + new Date(eventDetails.endsAt).toLocaleString() + t.detail.to_suffix : ""}
+            </p>
+
+
+            <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
             <p>{isTranslating ? "..." : translatedDescription}</p>
 
             <p style={{ color: "#666", marginTop: 10 }}>
@@ -789,8 +896,9 @@ export default function CampusMap() {
               </div>
             )}
 
-            <button
+            <Button
               onClick={() => setEventDetails(null)}
+              variant="outline-secondary"
               style={{
                 marginTop: 20,
                 padding: "10px 15px",
@@ -800,7 +908,7 @@ export default function CampusMap() {
               }}
             >
               {t.detail.close}
-            </button>
+            </Button>
           </div>
         </div>
       )}

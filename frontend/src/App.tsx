@@ -4,6 +4,7 @@ import Modify from './pages/Modify';
 import Login from './pages/Login';
 import AdminPage from "./pages/AdminPage"
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function App() {
   return (
