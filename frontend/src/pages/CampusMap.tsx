@@ -7,7 +7,7 @@ import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 
-import {ui_translations} from './constants/translations'
+import { ui_translations } from './constants/translations'
 import { useNavigate } from "react-router-dom";
 
 // (필요 시 수정) 챗봇 위젯 import
@@ -63,7 +63,7 @@ function ScheduleSidebar({ show, handleClose, events, onEventClick, t }: Schedul
       name="end"
       scroll={true}
       backdrop={false}
-      style={{ top: '56px', height: 'calc(100vh - 56px)' } }
+      style={{ top: '56px', height: 'calc(100vh - 56px)' }}
     >
       <Offcanvas.Header closeButton>
         <Offcanvas.Title>{t.main.event}</Offcanvas.Title>
@@ -159,8 +159,6 @@ export default function CampusMap() {
 
   const [showSchedule, setShowSchedule] = useState(false);
 
-  const userLang = (localStorage.getItem('language') as 'ko' | 'en' | 'mn') || 'ko';
-  const t = ui_translations[userLang];
   // ===========================
   // ⭐ 추가된 프로필 수정 state
   // ===========================
@@ -425,8 +423,16 @@ export default function CampusMap() {
     };
 
     document.head.appendChild(script);
-    return () => {document.head.removeChild(script)};
+    return () => { document.head.removeChild(script) };
   }, [isAddMode]);
+
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    if (confirm(t.main.logout_check)) {
+      localStorage.clear();
+      navigate("/login");
+    }
+  };
 
   // 네비게이션 바
   function NavBar({ name }: { name: string | null }) {
@@ -444,7 +450,7 @@ export default function CampusMap() {
               checked={showSchedule}
               onChange={(e) => setShowSchedule(e.currentTarget.checked)}
             >
-            {t.main.event_list}
+              {t.main.event_list}
             </ToggleButton>
             <Button variant="primary" onClick={() => setIsAddMode(!isAddMode)}>
               {isAddMode ? t.main.cancel : t.main.add_event}
@@ -452,6 +458,11 @@ export default function CampusMap() {
             <Navbar.Text className="ms-5">
               <strong>{name}</strong>
             </Navbar.Text>
+            {currentUserInfo && currentUserInfo.role === "ADMIN" && (
+              <Button onClick={() => navigate("/admin")} variant="warning" className="ms-2">
+                관리자 페이지
+              </Button>
+            )}
             <Button onClick={handleLogout} variant="dark" className="ms-2">
               {t.main.logout}
             </Button>
@@ -557,7 +568,7 @@ export default function CampusMap() {
     });
 
     if (res.ok) {
-      const data = await res.json(); 
+      const data = await res.json();
 
       if (data.isApproved) {
         alert("등록이 완료되었습니다! 지도에 바로 표시됩니다.");
@@ -589,543 +600,424 @@ export default function CampusMap() {
 
       {/* 헤더 */}
       <NavBar name={localStorage.getItem("username")} />
-      {/* <div
-        style={{
-          padding: "12px 24px",
-          background: "linear-gradient(135deg, #667eea, #764ba2)",
-          color: "white",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h2>{t.main.title}</h2>
 
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-          <Button
-            onClick={() => setIsAddMode(!isAddMode)}
-            variant="primary"
-          >
-            {isAddMode ? t.main.cancel : t.main.add_event}
-          </Button>
-          {/* 이벤트 추가 버튼: 로그인한 경우만 표시 */}
-          {currentUserInfo && (
-            <button
-              onClick={() => setIsAddMode(!isAddMode)}
-              style={{
-                padding: "8px 20px",
-                borderRadius: 8,
-                background: isAddMode ? "#ff6b6b" : "rgba(255,255,255,0.2)",
-                color: "white",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              {isAddMode ? t.main.cancel : t.main.add_event}
-            </button>
-          )}
-
-          <span>
-            {currentUserInfo ? `${currentUserInfo.name}님` : "사용자"}
-            {currentUserInfo && (
-              <span
-                style={{
-                  marginLeft: 8,
-                  padding: "2px 6px",
-                  borderRadius: 4,
-                  background: currentUserInfo.role === "ADMIN" ? "#ffc107" : "#28a745",
-                  fontSize: 12,
-                }}
-              >
-                {currentUserInfo.role}
-              </span>
-            )}
-          </span>
-
-          {currentUserInfo && currentUserInfo.role === "ADMIN" && (
-            <button
-              onClick={() => navigate("/admin")}
-              style={{
-                padding: "8px 20px",
-                borderRadius: "8px",
-                border: "none",
-                fontWeight: "600",
-                cursor: "pointer",
-                background: "#2d3436",
-                color: "white",
-              }}
-            >
-              관리자 페이지
-            </button>
-          )}
-
-          {/* 프로필 수정 버튼 */}
-          {currentUserInfo && (
-            <button
-              onClick={() => setShowProfileModal(true)}
-              style={{
-                padding: "8px 20px",
-                background: "rgba(255,255,255,0.2)",
-                borderRadius: 8,
-                border: "none",
-                color: "white",
-              }}
-            >
-              프로필 수정
-            </button>
-          )}
-
-          {/* 로그아웃 버튼 */}
-          {currentUserInfo && (
-            <button
-              onClick={() => {
-                if (confirm(t.main.logout_check)) {
-                  localStorage.clear();
-                  window.location.href = "/login";
-                }
-              }}
-              style={{
-                padding: "8px 20px",
-                background: "rgba(255,255,255,0.2)",
-                borderRadius: 8,
-                border: "none",
-                color: "white",
-              }}
-            >
-              {t.main.logout}
-            </button>
-          )}
-
-          {/* 로그인 버튼 (로그인하지 않은 경우만) */}
-          {!currentUserInfo && (
-            <button
-              onClick={() => navigate("/login")}
-              style={{
-                padding: "8px 20px",
-                background: "#667eea",
-                borderRadius: 8,
-                border: "none",
-                color: "white",
-                fontWeight: "bold",
-              }}
-            >
-              로그인
-            </button>
-          )}
-        </div>
-      </div> */}
       <ScheduleSidebar
         show={showSchedule}
-        events={eventList} // eventList를 ScheduleSidebar에 전달
+        events={eventList}
         handleClose={() => setShowSchedule(false)}
-        onEventClick={handleEventClickInSidebar} // 이벤트 클릭 핸들러 전달
+        onEventClick={handleEventClickInSidebar}
         t={t}
       />
+
       {/* 지도 */}
       <div ref={mapRef} style={{ flex: 1, width: "100%" }} />
 
       {/* 이벤트 추가 모드 안내 메시지 */}
-      {isAddMode && (
-        <div
-          style={{
-            position: "absolute",
-            top: 80,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#667eea",
-            color: "white",
-            padding: "12px 24px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            zIndex: 700,
-          }}
-        >
-          {t.main.add_guide}
-        </div>
-      )}
+      {
+        isAddMode && (
+          <div
+            style={{
+              position: "absolute",
+              top: 80,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "#667eea",
+              color: "white",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              zIndex: 700,
+            }}
+          >
+            {t.main.add_guide}
+          </div>
+        )
+      }
 
       {/* 이벤트 등록 모달 */}
       {/* ================== 등록 모달 ================== */}
-      {showForm && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 2000,
-          }}
-        >
+      {
+        showForm && (
           <div
             style={{
-              background: "white",
-              padding: 20,
-              borderRadius: 12,
-              width: 400,
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 2000,
             }}
           >
-            <h2>{t.add.title}</h2>
-
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <input
-                name="title"
-                placeholder={t.add.title_placeholder}
-                value={form.title}
-                onChange={onFormChange}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
-
-              <textarea
-                name="description"
-                placeholder={t.add.description_placeholder}
-                value={form.description}
-                onChange={onFormChange}
-                rows={4}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
-
-              <Form.Control type="file" accept="image/*" onChange={onImageChange} />
-
-              <div style={{ display: "flex", gap: 10 }}>
-                <input type="datetime-local" name="startsAt" value={form.startsAt} onChange={onFormChange} />
-                <input type="datetime-local" name="endsAt" value={form.endsAt} onChange={onFormChange} />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <Button type="button" variant="light" onClick={() => setShowForm(false)}>
-                  {t.add.cancel}
-                </Button>
-                <Button type="submit" variant="primary">
-                </button>
-
-                <button
-                  type="submit"
-                  style={{ background: "#667eea", color: "white", padding: "8px 15px" }}
-                >
-                  {t.add.post}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ================== 상세 모달 ================== */}
-      {eventDetails && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 3000,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: 20,
-              borderRadius: 12,
-              width: "90%",
-              maxWidth: 550,
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
-          >
-            <h3>{isTranslating ? "번역 중..." : translatedTitle}</h3>
-
-            {eventDetails.imageUrl && (
-              <img
-                src={eventDetails.imageUrl}
-                style={{
-                  width: "100%",
-                  borderRadius: 10,
-                  marginBottom: 12,
-                }}
-              />
-            )}
-
-            <p style={{ color: '#666' }}>
-              {eventDetails.startsAt ? t.detail.from_prefix + new Date(eventDetails.startsAt).toLocaleString() + t.detail.from_suffix : ""} <br />
-              {eventDetails.endsAt ? t.detail.to_prefix + new Date(eventDetails.endsAt).toLocaleString() + t.detail.to_suffix : ""}
-            </p>
-
-
-            <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
-            <p>{isTranslating ? "..." : translatedDescription}</p>
-
-            <p style={{ color: "#666", marginTop: 10 }}>
-              작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
-            </p>
-
-            <p>
-              {t.detail.likes}: <b>{eventDetails.likes ?? 0}</b>
-            </p>
-
-            {canEditOrDelete(eventDetails) && (
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
-                <button
-                  onClick={handleEditEvent}
-                  style={{
-                    background: "#007bff",
-                    color: "white",
-                    padding: "8px 15px",
-                    borderRadius: 8,
-                    border: "none",
-                  }}
-                >
-                  수정
-                </button>
-
-                <button
-                  onClick={handleDeleteEvent}
-                  style={{
-                    background: "#dc3545",
-                    color: "white",
-                    padding: "8px 15px",
-                    borderRadius: 8,
-                    border: "none",
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-            )}
-
-            <Button
-              onClick={() => setEventDetails(null)}
-              variant="outline-secondary"
+            <div
               style={{
-                marginTop: 20,
-                padding: "10px 15px",
-                borderRadius: 8,
-                border: "1px solid #ccc",
                 background: "white",
+                padding: 20,
+                borderRadius: 12,
+                width: 400,
               }}
             >
-              {t.detail.close}
-            </Button>
-          </div>
-        </div>
-      )}
+              <h2>{t.add.title}</h2>
 
-      {/* ================== 수정 모달 ================== */}
-      {isEditMode && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 2500,
-          }}
-        >
+              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input
+                  name="title"
+                  placeholder={t.add.title_placeholder}
+                  value={form.title}
+                  onChange={onFormChange}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+
+                <textarea
+                  name="description"
+                  placeholder={t.add.description_placeholder}
+                  value={form.description}
+                  onChange={onFormChange}
+                  rows={4}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+
+                <Form.Control type="file" accept="image/*" onChange={onImageChange} />
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <input type="datetime-local" name="startsAt" value={form.startsAt} onChange={onFormChange} />
+                  <input type="datetime-local" name="endsAt" value={form.endsAt} onChange={onFormChange} />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <Button type="button" variant="light" onClick={() => setShowForm(false)}>
+                    {t.add.cancel}
+                  </Button>
+                  <Button type="submit" variant="primary">
+                    {t.add.post}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      }
+
+      {/* ================== 상세 모달 ================== */}
+      {
+        eventDetails && (
           <div
             style={{
-              background: "white",
-              padding: 20,
-              borderRadius: 12,
-              width: 400,
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 3000,
             }}
           >
-            <h2>이벤트 수정</h2>
+            <div
+              style={{
+                background: "white",
+                padding: 20,
+                borderRadius: 12,
+                width: "90%",
+                maxWidth: 550,
+                maxHeight: "90vh",
+                overflowY: "auto",
+              }}
+            >
+              <h3>{isTranslating ? "번역 중..." : translatedTitle}</h3>
 
-            <form onSubmit={handleUpdateSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <input
-                name="title"
-                placeholder="제목"
-                value={editForm.title}
-                onChange={onEditFormChange}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
+              {eventDetails.imageUrl && (
+                <img
+                  src={eventDetails.imageUrl}
+                  style={{
+                    width: "100%",
+                    borderRadius: 10,
+                    marginBottom: 12,
+                  }}
+                />
+              )}
 
-              <textarea
-                name="description"
-                placeholder="내용"
-                value={editForm.description}
-                onChange={onEditFormChange}
-                rows={4}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-              />
+              <p style={{ color: '#666' }}>
+                {eventDetails.startsAt ? t.detail.from_prefix + new Date(eventDetails.startsAt).toLocaleString() + t.detail.from_suffix : ""} <br />
+                {eventDetails.endsAt ? t.detail.to_prefix + new Date(eventDetails.endsAt).toLocaleString() + t.detail.to_suffix : ""}
+              </p>
 
-              {currentImageUrl && (
-                <div style={{ marginBottom: 8 }}>
-                  <p style={{ fontSize: 14, color: "#666", marginBottom: 4 }}>현재 이미지:</p>
-                  <img
-                    src={currentImageUrl}
+
+              <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
+              <p>{isTranslating ? "..." : translatedDescription}</p>
+
+              <p style={{ color: "#666", marginTop: 10 }}>
+                작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
+              </p>
+
+              <p>
+                {t.detail.likes}: <b>{eventDetails.likes ?? 0}</b>
+              </p>
+
+              {canEditOrDelete(eventDetails) && (
+                <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
+                  <button
+                    onClick={handleEditEvent}
                     style={{
-                      width: "100%",
-                      maxHeight: 200,
-                      objectFit: "cover",
+                      background: "#007bff",
+                      color: "white",
+                      padding: "8px 15px",
                       borderRadius: 8,
+                      border: "none",
                     }}
-                  />
+                  >
+                    수정
+                  </button>
+
+                  <button
+                    onClick={handleDeleteEvent}
+                    style={{
+                      background: "#dc3545",
+                      color: "white",
+                      padding: "8px 15px",
+                      borderRadius: 8,
+                      border: "none",
+                    }}
+                  >
+                    삭제
+                  </button>
                 </div>
               )}
 
-              <input type="file" accept="image/*" onChange={onEditImageChange} />
-
-              <div style={{ display: "flex", gap: 10 }}>
-                <input
-                  type="datetime-local"
-                  name="startsAt"
-                  value={editForm.startsAt}
-                  onChange={onEditFormChange}
-                />
-                <input
-                  type="datetime-local"
-                  name="endsAt"
-                  value={editForm.endsAt}
-                  onChange={onEditFormChange}
-                />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button type="button" onClick={() => setIsEditMode(false)}>
-                  취소
-                </button>
-
-                <button
-                  type="submit"
-                  style={{ background: "#007bff", color: "white", padding: "8px 15px" }}
-                >
-                  수정 완료
-                </button>
-              </div>
-            </form>
+              <Button
+                onClick={() => setEventDetails(null)}
+                variant="outline-secondary"
+                style={{
+                  marginTop: 20,
+                  padding: "10px 15px",
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  background: "white",
+                }}
+              >
+                {t.detail.close}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
+
+      {/* ================== 수정 모달 ================== */}
+      {
+        isEditMode && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 2500,
+            }}
+          >
+            <div
+              style={{
+                background: "white",
+                padding: 20,
+                borderRadius: 12,
+                width: 400,
+              }}
+            >
+              <h2>이벤트 수정</h2>
+
+              <form onSubmit={handleUpdateSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input
+                  name="title"
+                  placeholder="제목"
+                  value={editForm.title}
+                  onChange={onEditFormChange}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+
+                <textarea
+                  name="description"
+                  placeholder="내용"
+                  value={editForm.description}
+                  onChange={onEditFormChange}
+                  rows={4}
+                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+                />
+
+                {currentImageUrl && (
+                  <div style={{ marginBottom: 8 }}>
+                    <p style={{ fontSize: 14, color: "#666", marginBottom: 4 }}>현재 이미지:</p>
+                    <img
+                      src={currentImageUrl}
+                      style={{
+                        width: "100%",
+                        maxHeight: 200,
+                        objectFit: "cover",
+                        borderRadius: 8,
+                      }}
+                    />
+                  </div>
+                )}
+
+                <input type="file" accept="image/*" onChange={onEditImageChange} />
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <input
+                    type="datetime-local"
+                    name="startsAt"
+                    value={editForm.startsAt}
+                    onChange={onEditFormChange}
+                  />
+                  <input
+                    type="datetime-local"
+                    name="endsAt"
+                    value={editForm.endsAt}
+                    onChange={onEditFormChange}
+                  />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <button type="button" onClick={() => setIsEditMode(false)}>
+                    취소
+                  </button>
+
+                  <button
+                    type="submit"
+                    style={{ background: "#007bff", color: "white", padding: "8px 15px" }}
+                  >
+                    수정 완료
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      }
 
       {/* ===========================
           ⭐ 프로필 수정 모달 
       =========================== */}
-      {showProfileModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 5000,
-          }}
-        >
+      {
+        showProfileModal && (
           <div
             style={{
-              background: "white",
-              padding: 20,
-              borderRadius: 12,
-              width: 380,
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 5000,
             }}
           >
-            <h3 style={{ marginBottom: 16 }}>프로필 수정</h3>
-
-            {/* 닉네임 변경 */}
-            <div style={{ marginBottom: 20 }}>
-              <label>닉네임</label>
-              <input
-                name="username"
-                value={profileForm.username}
-                onChange={onProfileChange}
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ccc",
-                  marginTop: 5,
-                }}
-              />
-
-              <button
-                onClick={handleUpdateNickname}
-                style={{
-                  marginTop: 10,
-                  width: "100%",
-                  padding: "10px 0",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "#667eea",
-                  color: "white",
-                }}
-              >
-                닉네임 변경
-              </button>
-            </div>
-
-            <hr style={{ margin: "20px 0" }} />
-
-            {/* 비밀번호 변경 */}
-            <div>
-              <label>현재 비밀번호</label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={profileForm.currentPassword}
-                onChange={onProfileChange}
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ccc",
-                  marginTop: 5,
-                }}
-              />
-
-              <label style={{ marginTop: 10, display: "block" }}>새 비밀번호</label>
-              <input
-                type="password"
-                name="newPassword"
-                value={profileForm.newPassword}
-                onChange={onProfileChange}
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ccc",
-                  marginTop: 5,
-                }}
-              />
-
-              <button
-                onClick={handleChangePassword}
-                style={{
-                  marginTop: 10,
-                  width: "100%",
-                  padding: "10px 0",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "#28a745",
-                  color: "white",
-                }}
-              >
-                비밀번호 변경
-              </button>
-            </div>
-
-            <button
-              onClick={() => setShowProfileModal(false)}
+            <div
               style={{
-                marginTop: 20,
-                width: "100%",
-                padding: "10px 0",
-                borderRadius: 8,
-                border: "1px solid #ccc",
                 background: "white",
+                padding: 20,
+                borderRadius: 12,
+                width: 380,
               }}
             >
-              닫기
-            </button>
+              <h3 style={{ marginBottom: 16 }}>프로필 수정</h3>
+
+              {/* 닉네임 변경 */}
+              <div style={{ marginBottom: 20 }}>
+                <label>닉네임</label>
+                <input
+                  name="username"
+                  value={profileForm.username}
+                  onChange={onProfileChange}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 8,
+                    border: "1px solid #ccc",
+                    marginTop: 5,
+                  }}
+                />
+
+                <button
+                  onClick={handleUpdateNickname}
+                  style={{
+                    marginTop: 10,
+                    width: "100%",
+                    padding: "10px 0",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "#667eea",
+                    color: "white",
+                  }}
+                >
+                  닉네임 변경
+                </button>
+              </div>
+
+              <hr style={{ margin: "20px 0" }} />
+
+              {/* 비밀번호 변경 */}
+              <div>
+                <label>현재 비밀번호</label>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={profileForm.currentPassword}
+                  onChange={onProfileChange}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 8,
+                    border: "1px solid #ccc",
+                    marginTop: 5,
+                  }}
+                />
+
+                <label style={{ marginTop: 10, display: "block" }}>새 비밀번호</label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={profileForm.newPassword}
+                  onChange={onProfileChange}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 8,
+                    border: "1px solid #ccc",
+                    marginTop: 5,
+                  }}
+                />
+
+                <button
+                  onClick={handleChangePassword}
+                  style={{
+                    marginTop: 10,
+                    width: "100%",
+                    padding: "10px 0",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "#28a745",
+                    color: "white",
+                  }}
+                >
+                  비밀번호 변경
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowProfileModal(false)}
+                style={{
+                  marginTop: 20,
+                  width: "100%",
+                  padding: "10px 0",
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  background: "white",
+                }}
+              >
+                닫기
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
