@@ -32,8 +32,16 @@ interface EventDetail {
   imageUrl?: string;
 }
 
+interface ScheduleSidebarProps {
+  show: boolean;
+  handleClose: () => void;
+  events: EventDetail[];
+  onEventClick: (event: EventDetail) => void;
+  t: any;
+}
+
 // 일정 사이드바
-function ScheduleSidebar({ show, handleClose, events, onEventClick }: ScheduleSidebarProps) {
+function ScheduleSidebar({ show, handleClose, events, onEventClick, t }: ScheduleSidebarProps) {
   const sortedEvents = [...events].sort((a, b) => {
     const dateA = a.startsAt ? new Date(a.startsAt).getTime() : new Date(9999, 12);
     const dateB = b.startsAt ? new Date(b.startsAt).getTime() : new Date(9999, 12);
@@ -52,7 +60,7 @@ function ScheduleSidebar({ show, handleClose, events, onEventClick }: ScheduleSi
       style={{ top: '56px', height: 'calc(100vh - 56px)' } }
     >
       <Offcanvas.Header closeButton>
-        <Offcanvas.Title>일정</Offcanvas.Title>
+        <Offcanvas.Title>{t.main.event}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
         {sortedEvents.length === 0 ? (
@@ -74,8 +82,8 @@ function ScheduleSidebar({ show, handleClose, events, onEventClick }: ScheduleSi
               >
                 <h5>{event.title}</h5>
                 <p style={{ fontSize: '0.9em', color: '#666' }}>
-                  {event.startsAt ? new Date(event.startsAt).toLocaleString() + '부터' : '날짜 없음'}<br />
-                  {event.endsAt ? new Date(event.endsAt).toLocaleString() + '까지' : ''}
+                  {event.startsAt ? t.detail.from_prefix + new Date(event.startsAt).toLocaleString() + t.detail.from_suffix : t.detail.no_date}<br />
+                  {event.endsAt ? t.detail.to_prefix + new Date(event.endsAt).toLocaleString() + t.detail.to_suffix : ''}
                 </p>
               </div>
             ))}
@@ -84,13 +92,6 @@ function ScheduleSidebar({ show, handleClose, events, onEventClick }: ScheduleSi
       </Offcanvas.Body>
     </Offcanvas>
   );
-}
-
-interface ScheduleSidebarProps {
-  show: boolean;
-  handleClose: () => void;
-  events: EventDetail[];
-  onEventClick: (event: EventDetail) => void;
 }
 
 export default function CampusMap() {
@@ -213,7 +214,7 @@ export default function CampusMap() {
     return (
       <Navbar className="bg-body-tertiary" bg="dark" data-bs-theme="dark">
         <Container fluid>
-          <Navbar.Brand>{t.main.title}</Navbar.Brand>
+          <Navbar.Brand><strong>{t.main.title}</strong></Navbar.Brand>
           <Navbar.Collapse className="justify-content-end">
             <ToggleButton
               id="toggle-check"
@@ -224,7 +225,7 @@ export default function CampusMap() {
               checked={showSchedule}
               onChange={(e) => setShowSchedule(e.currentTarget.checked)}
             >
-            일정 목록
+            {t.main.event_list}
             </ToggleButton>
             <Button variant="primary" onClick={() => setIsAddMode(!isAddMode)}>
               {isAddMode ? t.main.cancel : t.main.add_event}
@@ -440,6 +441,7 @@ export default function CampusMap() {
         events={eventList} // eventList를 ScheduleSidebar에 전달
         handleClose={() => setShowSchedule(false)}
         onEventClick={handleEventClickInSidebar} // 이벤트 클릭 핸들러 전달
+        t={t}
       />
       {/* 지도 */}
       <div ref={mapRef} style={{ width: "100%", flex: 1 }} />
@@ -568,8 +570,8 @@ export default function CampusMap() {
             )}
 
             <p style={{ color: '#666' }}>
-              {eventDetails.startsAt ? new Date(eventDetails.startsAt).toLocaleString() + "부터" : ""} <br />
-              {eventDetails.endsAt ? new Date(eventDetails.endsAt).toLocaleString() + "까지" : ""}
+              {eventDetails.startsAt ? t.detail.from_prefix + new Date(eventDetails.startsAt).toLocaleString() + t.detail.from_suffix : ""} <br />
+              {eventDetails.endsAt ? t.detail.to_prefix + new Date(eventDetails.endsAt).toLocaleString() + t.detail.to_suffix : ""}
             </p>
 
 
