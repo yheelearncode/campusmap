@@ -38,6 +38,14 @@ interface EventDetail {
   creatorName?: string;
 }
 
+interface Comment {
+  id: number;
+  content: string;
+  userName: string;
+  createdAt: string;
+  isMine: boolean;
+}
+
 interface ScheduleSidebarProps {
   show: boolean;
   handleClose: () => void;
@@ -141,6 +149,7 @@ export default function CampusMap() {
   const [eventList, setEventList] = useState<EventDetail[]>([]);
   const [eventDetails, setEventDetails] = useState<EventDetail | null>(null);
   const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<Comment[]>([]);
 
   // 유저 정보
   const [currentUserInfo, setCurrentUserInfo] = useState<{
@@ -395,6 +404,106 @@ export default function CampusMap() {
       .finally(() => setIsTranslating(false));
   }, [eventDetails, userLang]);
 
+  // 댓글 불러오기
+  useEffect(() => {
+    if (eventDetails) {
+      console.log("Fetching comments for event:", eventDetails.id);
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      fetch(`/api/events/${eventDetails.id}/comments`, {
+        cache: "no-store",
+        headers
+      })
+        .then((res) => {
+          console.log("Comment fetch response status:", res.status);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          console.log("Received comment data:", data);
+          if (!Array.isArray(data)) {
+            console.error("Expected array but got:", data);
+            setComments([]);
+            return;
+          }
+          // 내 댓글 여부 판단
+          const myName = localStorage.getItem("username");
+          const processed = data.map((c: any) => ({
+            ...c,
+            isMine: c.userName === myName || currentUserInfo?.role === "ADMIN",
+          }));
+          console.log("Processed comments:", processed);
+          setComments(processed);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch comments:", err);
+          setComments([]);
+        });
+    } else {
+      setComments([]);
+    }
+  }, [eventDetails, currentUserInfo]);
+
+  // 댓글 작성
+  const handleAddComment = async () => {
+    if (!comment.trim()) return;
+    if (!eventDetails) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return alert("로그인이 필요합니다.");
+
+    const res = await fetch(`/api/events/${eventDetails.id}/comments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content: comment }),
+    });
+
+    if (res.ok) {
+      const newComment = await res.json();
+      setComment("");
+      setComments((prev) => [...prev, newComment]);
+    } else {
+      if (res.status === 403) {
+        alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+        localStorage.clear();
+        window.location.href = "/login";
+        return;
+      }
+      try {
+        const err = await res.json();
+        alert(`댓글 작성 실패: ${err.error || JSON.stringify(err)}`);
+      } catch (e) {
+        alert(`댓글 작성 실패: ${res.status} ${res.statusText}`);
+      }
+    }
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: number) => {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/comments/${commentId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } else {
+      alert("삭제 실패");
+    }
+  };
+
   // Kakao map loader
   useEffect(() => {
     const script = document.createElement("script");
@@ -585,6 +694,33 @@ export default function CampusMap() {
     }
   };
 
+  // 좋아요 핸들러
+  const handleLike = async () => {
+    if (!eventDetails) return;
+
+    // 낙관적 업데이트 (Optimistic Update)
+    setEventDetails((prev) => (prev ? { ...prev, likes: (prev.likes || 0) + 1 } : null));
+
+    try {
+      const res = await fetch(`/api/events/${eventDetails.id}/like`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // 서버 응답값으로 확정
+        setEventDetails((prev) => (prev ? { ...prev, likes: data.likes } : null));
+
+        // 목록에도 반영
+        setEventList((prev) =>
+          prev.map((e) => (e.id === eventDetails.id ? { ...e, likes: data.likes } : e))
+        );
+      }
+    } catch (e) {
+      console.error("Like failed", e);
+    }
+  };
+
   return (
     <div
       style={{
@@ -749,9 +885,29 @@ export default function CampusMap() {
                 작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
               </p>
 
-              <p>
-                {t.detail.likes}: <b>{eventDetails.likes ?? 0}</b>
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+                <span>{t.detail.likes}: <b>{eventDetails.likes ?? 0}</b></span>
+                <button
+                  onClick={handleLike}
+                  style={{
+                    background: "none",
+                    border: "1px solid #ff4d4f",
+                    color: "#ff4d4f",
+                    borderRadius: "50%",
+                    width: 32,
+                    height: 32,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.2rem",
+                    paddingBottom: 2,
+                  }}
+                  title="좋아요"
+                >
+                  ♥
+                </button>
+              </div>
 
               {canEditOrDelete(eventDetails) && (
                 <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
@@ -782,6 +938,91 @@ export default function CampusMap() {
                   </button>
                 </div>
               )}
+
+              <hr style={{ margin: "20px 0" }} />
+
+              {/* 댓글 섹션 */}
+              <div>
+                <h5>댓글 ({comments.length})</h5>
+                <div
+                  style={{
+                    maxHeight: 200,
+                    overflowY: "auto",
+                    background: "#f8f9fa",
+                    padding: 10,
+                    borderRadius: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  {comments.length === 0 ? (
+                    <p style={{ color: "#aaa", textAlign: "center" }}>첫 댓글을 남겨보세요!</p>
+                  ) : (
+                    comments.map((c) => (
+                      <div
+                        key={c.id}
+                        style={{
+                          borderBottom: "1px solid #eee",
+                          padding: "8px 0",
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: "bold", fontSize: "0.9em" }}>
+                            {c.userName}
+                            <span style={{ fontWeight: "normal", color: "#aaa", marginLeft: 8, fontSize: "0.8em" }}>
+                              {new Date(c.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          <div>{c.content}</div>
+                        </div>
+                        {c.isMine && (
+                          <button
+                            onClick={() => handleDeleteComment(c.id)}
+                            style={{
+                              border: "none",
+                              background: "none",
+                              color: "#dc3545",
+                              fontSize: "0.8em",
+                              cursor: "pointer",
+                            }}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="댓글을 입력하세요..."
+                    style={{
+                      flex: 1,
+                      padding: 8,
+                      borderRadius: 6,
+                      border: "1px solid #ccc",
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                  />
+                  <button
+                    onClick={handleAddComment}
+                    style={{
+                      background: "#667eea",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 16px",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                    }}
+                  >
+                    등록
+                  </button>
+                </div>
+              </div>
 
               <Button
                 onClick={() => setEventDetails(null)}

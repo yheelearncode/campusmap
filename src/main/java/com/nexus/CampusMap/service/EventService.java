@@ -189,4 +189,17 @@ public class EventService {
         // 3. 검증 통과: 삭제 진행
         eventRepository.delete(existingEvent);
     }
+    // 좋아요 증가
+    public int likeEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found"));
+        
+        if (event.getLikes() == null) {
+            event.setLikes(0);
+        }
+        event.setLikes(event.getLikes() + 1);
+        eventRepository.save(event);
+        
+        return event.getLikes();
+    }
 }

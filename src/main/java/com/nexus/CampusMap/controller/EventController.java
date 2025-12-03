@@ -190,4 +190,14 @@ public class EventController {
             return ResponseEntity.badRequest().body(Map.of("error", "이벤트 수정 실패: " + e.getMessage()));
         }
     }
+    // 좋아요
+    @PostMapping("/{id}/like")
+    public ResponseEntity<?> likeEvent(@PathVariable Long id) {
+        try {
+            int newLikes = eventService.likeEvent(id);
+            return ResponseEntity.ok(Map.of("likes", newLikes));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
