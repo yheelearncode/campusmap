@@ -57,8 +57,8 @@ interface ScheduleSidebarProps {
 // 일정 사이드바
 function ScheduleSidebar({ show, handleClose, events, onEventClick, t }: ScheduleSidebarProps) {
   const sortedEvents = [...events].sort((a, b) => {
-    const dateA = a.startsAt ? new Date(a.startsAt).getTime() : new Date(9999, 12);
-    const dateB = b.startsAt ? new Date(b.startsAt).getTime() : new Date(9999, 12);
+    const dateA = a.startsAt ? new Date(a.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
+    const dateB = b.startsAt ? new Date(b.startsAt).getTime() : Number.MAX_SAFE_INTEGER;
     return dateA - dateB;
   });
 

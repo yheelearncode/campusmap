@@ -1,6 +1,6 @@
 // src/pages/AdminPage.tsx
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface User {
@@ -10,13 +10,7 @@ interface User {
   role: string;
 }
 
-interface PendingEvent {
-  id: number;
-  title: string;
-  description: string;
-  creatorName: string;
-  createdAt: string;
-}
+
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
