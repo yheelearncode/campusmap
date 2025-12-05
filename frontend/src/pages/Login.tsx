@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { colors, gradients, spacing, borderRadius, shadows, typography, commonStyles } from '../styles/design-tokens';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -82,6 +83,23 @@ export default function Login() {
     }
   };
 
+  const labelStyle = {
+    display: 'block',
+    marginBottom: spacing.sm,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
+    fontSize: typography.fontSize.sm,
+  };
+
+  const inputStyle = {
+    ...commonStyles.input,
+    fontSize: typography.fontSize.sm,
+  };
+
+  const formGroupStyle = {
+    marginBottom: spacing.lg,
+  };
+
   return (
     <div style={{
       width: '100vw',
@@ -89,37 +107,30 @@ export default function Login() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      background: gradients.primary
     }}>
       <div style={{
-        background: 'white',
-        padding: '40px',
-        borderRadius: '16px',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+        background: colors.white,
+        padding: spacing.huge,
+        borderRadius: borderRadius.xl,
+        boxShadow: shadows.lg,
         minWidth: '400px',
         maxWidth: '450px'
       }}>
         <h2 style={{
-          margin: '0 0 24px 0',
-          fontSize: '28px',
-          fontWeight: '600',
-          color: '#333',
+          margin: `0 0 ${spacing.xxl} 0`,
+          fontSize: typography.fontSize.xxxl,
+          fontWeight: typography.fontWeight.semibold,
+          color: colors.textPrimary,
           textAlign: 'center'
         }}>
-          {isLogin ? '🔐 로그인' : '✨ 회원가입'}
+          {isLogin ? '로그인' : '회원가입'}
         </h2>
 
         <form onSubmit={handleSubmit}>
           {!isLogin && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{
-                display: 'block',
-                marginBottom: 8,
-                fontWeight: '500',
-                color: '#555'
-              }}>
-                이름
-              </label>
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>이름</label>
               <input
                 type="text"
                 name="name"
@@ -127,44 +138,22 @@ export default function Login() {
                 onChange={handleChange}
                 placeholder="이름을 입력하세요"
                 required={!isLogin}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
+                style={inputStyle}
               />
             </div>
           )}
 
           {!isLogin && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{
-                display: 'block',
-                marginBottom: 8,
-                fontWeight: '500',
-                color: '#555'
-              }}>
-                사용자 역할
-              </label>
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>사용자 역할</label>
               <select
                 name="role"
                 value={form.role}
                 onChange={handleChange}
                 required={!isLogin}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
+                style={inputStyle}
               >
                 <option value="" disabled>역할을 선택하세요 *</option>
-
                 <option value="USER">일반 사용자</option>
                 <option value="STAFF">스태프</option>
                 <option value="ADMIN">관리자</option>
@@ -172,45 +161,25 @@ export default function Login() {
             </div>
           )}
 
-          {!isLogin && (<div style={{ marginBottom: 16 }}>
-            <label style={{
-              display: 'block',
-              marginBottom: 8,
-              fontWeight: '500',
-              color: '#555'
-            }}>
-              언어
-            </label>
-            <select
-              name="language"
-              value={form.language}
-              onChange={handleChange}
-              required={!isLogin}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            >
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
-              <option value="mn">Монгол</option>
-            </select>
-          </div>
+          {!isLogin && (
+            <div style={formGroupStyle}>
+              <label style={labelStyle}>언어</label>
+              <select
+                name="language"
+                value={form.language}
+                onChange={handleChange}
+                required={!isLogin}
+                style={inputStyle}
+              >
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
+                <option value="mn">Монгол</option>
+              </select>
+            </div>
           )}
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{
-              display: 'block',
-              marginBottom: 8,
-              fontWeight: '500',
-              color: '#555'
-            }}>
-              이메일
-            </label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>이메일</label>
             <input
               type="email"
               name="email"
@@ -218,26 +187,12 @@ export default function Login() {
               onChange={handleChange}
               placeholder="example@email.com"
               required
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
+              style={inputStyle}
             />
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{
-              display: 'block',
-              marginBottom: 8,
-              fontWeight: '500',
-              color: '#555'
-            }}>
-              비밀번호
-            </label>
+          <div style={formGroupStyle}>
+            <label style={labelStyle}>비밀번호</label>
             <input
               type="password"
               name="password"
@@ -245,27 +200,13 @@ export default function Login() {
               onChange={handleChange}
               placeholder="비밀번호를 입력하세요"
               required
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
+              style={inputStyle}
             />
           </div>
 
           {!isLogin && (
-            <div style={{ marginBottom: 24 }}>
-              <label style={{
-                display: 'block',
-                marginBottom: 8,
-                fontWeight: '500',
-                color: '#555'
-              }}>
-                비밀번호 확인
-              </label>
+            <div style={{ marginBottom: spacing.xxl }}>
+              <label style={labelStyle}>비밀번호 확인</label>
               <input
                 type="password"
                 name="confirmPassword"
@@ -273,14 +214,7 @@ export default function Login() {
                 onChange={handleChange}
                 placeholder="비밀번호를 다시 입력하세요"
                 required={!isLogin}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
-                }}
+                style={inputStyle}
               />
             </div>
           )}
@@ -288,23 +222,21 @@ export default function Login() {
           <button
             type="submit"
             style={{
+              ...commonStyles.button.primary,
               width: '100%',
-              padding: '14px',
-              border: 'none',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              marginBottom: '16px'
+              padding: `${spacing.md} 0`,
+              marginBottom: spacing.lg,
             }}
           >
             {isLogin ? '로그인' : '회원가입'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', fontSize: '14px', color: '#666' }}>
+        <div style={{
+          textAlign: 'center',
+          fontSize: typography.fontSize.sm,
+          color: colors.textSecondary
+        }}>
           {isLogin ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}
           <button
             onClick={() => {
@@ -312,13 +244,13 @@ export default function Login() {
               setForm({ email: '', password: '', name: '', confirmPassword: '', role: '', language: '' });
             }}
             style={{
-              marginLeft: '8px',
+              marginLeft: spacing.sm,
               background: 'none',
               border: 'none',
-              color: '#667eea',
-              fontWeight: '600',
+              color: colors.primary,
+              fontWeight: typography.fontWeight.semibold,
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: typography.fontSize.sm,
             }}
           >
             {isLogin ? '회원가입' : '로그인'}

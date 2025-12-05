@@ -25,7 +25,7 @@ export const ui_translations = {
       to_prefix: "",
       to_suffix: "까지",
       no_date: "날짜 없음",
-      likes: "추천",
+
       close: "닫기",
     }
   },
@@ -55,7 +55,7 @@ export const ui_translations = {
       to_prefix: "to: ",
       to_suffix: "",
       no_date: "no date",
-      likes: "Likes",
+
       close: "Close",
     }
   },
@@ -85,7 +85,7 @@ export const ui_translations = {
       to_prefix: "to ",
       to_suffix: "",
       no_date: "날짜 없음",
-      likes: "추천(mn)",
+
       close: "닫기(mn)",
     }
   }

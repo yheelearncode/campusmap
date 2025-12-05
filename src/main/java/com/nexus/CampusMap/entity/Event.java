@@ -46,8 +46,7 @@ public class Event {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column
-    private Integer likes = 0;
+
     
     @Column(columnDefinition = "boolean default false")
     private boolean approved;
@@ -84,8 +83,7 @@ public class Event {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public Integer getLikes() { return likes; }
-    public void setLikes(Integer likes) { this.likes = likes; }
+
     
     public String getCreatorName() { return creatorName; }
     public void setCreatorName(String creatorName) { this.creatorName = creatorName; }

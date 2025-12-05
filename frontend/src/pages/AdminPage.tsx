@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { colors, spacing, borderRadius, shadows, typography, commonStyles } from '../styles/design-tokens';
 
 interface User {
   id: number;
@@ -9,8 +10,6 @@ interface User {
   email: string;
   role: string;
 }
-
-
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -34,9 +33,9 @@ export default function AdminPage() {
       try {
         const userRes = await fetch("/api/admin/users", { headers });
         if (userRes.ok) {
-            setUsers(await userRes.json());
+          setUsers(await userRes.json());
         }
-        
+
         const eventRes = await fetch("/api/admin/events/pending", { headers });
         if (eventRes.ok) {
           setPendingEvents(await eventRes.json());
@@ -98,46 +97,62 @@ export default function AdminPage() {
     }
   };
 
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "ADMIN": return colors.danger;
+      case "STAFF": return colors.secondary;
+      default: return colors.success;
+    }
+  };
+
   return (
-    <div 
-      style={{ 
-        width: "100vw", 
-        minHeight: "100vh", 
-        background: "#f4f6f8", 
+    <div
+      style={{
+        width: "100vw",
+        minHeight: "100vh",
+        background: colors.gray100,
         display: "flex",
         justifyContent: "center",
-        boxSizing: "border-box" 
+        boxSizing: "border-box",
+        padding: spacing.huge,
       }}
     >
-      
-      <div 
-        style={{ 
-          width: "100%", 
-          background: "white",
-          borderRadius: "16px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-          padding: "40px",
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1400px",
+          background: colors.white,
+          borderRadius: borderRadius.xl,
+          boxShadow: shadows.md,
+          padding: spacing.huge,
           display: "flex",
           flexDirection: "column",
-          gap: "50px"
+          gap: spacing.xxxl,
         }}
       >
-        
+
         {/* 헤더 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #eee", paddingBottom: "20px" }}>
-          <h2 style={{ margin: 0, color: "#333", fontSize: "28px" }}>👮‍♂️ 관리자 페이지</h2>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: `2px solid ${colors.gray200}`,
+          paddingBottom: spacing.xl
+        }}>
+          <h2 style={{
+            margin: 0,
+            color: colors.textPrimary,
+            fontSize: typography.fontSize.xxxl,
+            fontWeight: typography.fontWeight.semibold,
+          }}>
+            👮‍♂️ 관리자 페이지
+          </h2>
           <button
             onClick={() => navigate("/map")}
             style={{
-              padding: "12px 24px",
-              background: "#667eea",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              fontSize: "16px",
-              boxShadow: "0 4px 10px rgba(102, 126, 234, 0.3)"
+              ...commonStyles.button.primary,
+              fontSize: typography.fontSize.md,
             }}
           >
             지도로 돌아가기
@@ -146,46 +161,92 @@ export default function AdminPage() {
 
         {/* 섹션 1: 회원 권한 관리 */}
         <div>
-          <h3 style={{ margin: "0 0 20px 0", color: "#444", fontSize: "20px", borderLeft: "5px solid #667eea", paddingLeft: "15px" }}>
+          <h3 style={{
+            margin: `0 0 ${spacing.xl} 0`,
+            color: colors.textPrimary,
+            fontSize: typography.fontSize.xl,
+            borderLeft: `5px solid ${colors.primary}`,
+            paddingLeft: spacing.lg,
+            fontWeight: typography.fontWeight.semibold,
+          }}>
             👥 회원 리스트 및 권한 관리
           </h3>
-          
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "16px" }}>
+
+          <table style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: typography.fontSize.md
+          }}>
             <thead>
-              <tr style={{ background: "#f8f9fa", textAlign: "left", color: "#555" }}>
-                <th style={{ padding: "16px", borderBottom: "2px solid #ddd", width: "10%" }}>ID</th>
-                <th style={{ padding: "16px", borderBottom: "2px solid #ddd", width: "20%" }}>이름</th>
-                <th style={{ padding: "16px", borderBottom: "2px solid #ddd", width: "30%" }}>이메일</th>
-                <th style={{ padding: "16px", borderBottom: "2px solid #ddd", width: "20%" }}>현재 권한</th>
-                <th style={{ padding: "16px", borderBottom: "2px solid #ddd", width: "20%" }}>권한 변경</th>
+              <tr style={{
+                background: colors.gray100,
+                textAlign: "left",
+                color: colors.textSecondary
+              }}>
+                <th style={{
+                  padding: spacing.lg,
+                  borderBottom: `2px solid ${colors.gray300}`,
+                  width: "10%"
+                }}>ID</th>
+                <th style={{
+                  padding: spacing.lg,
+                  borderBottom: `2px solid ${colors.gray300}`,
+                  width: "20%"
+                }}>이름</th>
+                <th style={{
+                  padding: spacing.lg,
+                  borderBottom: `2px solid ${colors.gray300}`,
+                  width: "30%"
+                }}>이메일</th>
+                <th style={{
+                  padding: spacing.lg,
+                  borderBottom: `2px solid ${colors.gray300}`,
+                  width: "20%"
+                }}>현재 권한</th>
+                <th style={{
+                  padding: spacing.lg,
+                  borderBottom: `2px solid ${colors.gray300}`,
+                  width: "20%"
+                }}>권한 변경</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "16px" }}>{user.id}</td>
-                  <td style={{ padding: "16px", fontWeight: "600" }}>{user.username}</td>
-                  <td style={{ padding: "16px", color: "#666" }}>{user.email}</td>
-                  <td style={{ padding: "16px" }}>
+                <tr key={user.id} style={{ borderBottom: `1px solid ${colors.gray200}` }}>
+                  <td style={{ padding: spacing.lg }}>{user.id}</td>
+                  <td style={{
+                    padding: spacing.lg,
+                    fontWeight: typography.fontWeight.semibold
+                  }}>{user.username}</td>
+                  <td style={{
+                    padding: spacing.lg,
+                    color: colors.textSecondary
+                  }}>{user.email}</td>
+                  <td style={{ padding: spacing.lg }}>
                     <span
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: "20px",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        color: "white",
-                        background:
-                          user.role === "ADMIN" ? "#ff6b6b" : user.role === "STAFF" ? "#fca311" : "#28a745",
+                        padding: `${spacing.xs} ${spacing.md}`,
+                        borderRadius: borderRadius.pill,
+                        fontSize: typography.fontSize.sm,
+                        fontWeight: typography.fontWeight.bold,
+                        color: colors.white,
+                        background: getRoleBadgeColor(user.role),
                       }}
                     >
                       {user.role}
                     </span>
                   </td>
-                  <td style={{ padding: "16px" }}>
+                  <td style={{ padding: spacing.lg }}>
                     <select
                       value={user.role}
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      style={{ padding: "8px", borderRadius: "6px", border: "1px solid #ccc", cursor: "pointer", fontSize: "14px" }}
+                      style={{
+                        padding: spacing.sm,
+                        borderRadius: borderRadius.sm,
+                        border: `1px solid ${colors.gray300}`,
+                        cursor: "pointer",
+                        fontSize: typography.fontSize.sm
+                      }}
                     >
                       <option value="USER">USER</option>
                       <option value="STAFF">STAFF</option>
@@ -200,62 +261,107 @@ export default function AdminPage() {
 
         {/* 섹션 2: 승인 대기 목록 */}
         <div>
-          <h3 style={{ margin: "0 0 20px 0", color: "#444", fontSize: "20px", borderLeft: "5px solid #fca311", paddingLeft: "15px" }}>
+          <h3 style={{
+            margin: `0 0 ${spacing.xl} 0`,
+            color: colors.textPrimary,
+            fontSize: typography.fontSize.xl,
+            borderLeft: `5px solid ${colors.secondary}`,
+            paddingLeft: spacing.lg,
+            fontWeight: typography.fontWeight.semibold,
+          }}>
             ⏳ 승인 대기 중인 이벤트 ({pendingEvents.length}건)
           </h3>
 
           {pendingEvents.length === 0 ? (
-            <div style={{ padding: "60px", textAlign: "center", background: "#f9f9f9", borderRadius: "12px", color: "#999", fontSize: "18px" }}>
+            <div style={{
+              padding: spacing.huge,
+              textAlign: "center",
+              background: colors.gray100,
+              borderRadius: borderRadius.lg,
+              color: colors.textMuted,
+              fontSize: typography.fontSize.lg
+            }}>
               현재 승인 대기 중인 이벤트가 없습니다.
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "25px" }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: spacing.xl
+            }}>
               {pendingEvents.map((event) => (
                 <div
                   key={event.id}
                   style={{
-                    background: "white",
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "12px",
-                    padding: "25px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    ...commonStyles.card,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
                     height: "100%",
-                    boxSizing: "border-box",
-                    transition: "transform 0.2s",
+                    border: `1px solid ${colors.gray200}`,
                   }}
                   onMouseOver={(e) => (e.currentTarget.style.transform = "translateY(-5px)")}
                   onMouseOut={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                 >
                   <div>
-                    <div style={{display: "flex", justifyContent: "space-between", marginBottom: "10px"}}>
-                       <span style={{ fontSize: "12px", background: "#eee", padding: "4px 8px", borderRadius: "4px", color: "#555"}}>ID: {event.id}</span>
-                       <span style={{ fontSize: "12px", color: "#888"}}>{new Date(event.createdAt).toLocaleDateString()}</span>
+                    <div style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: spacing.sm
+                    }}>
+                      <span style={{
+                        fontSize: typography.fontSize.xs,
+                        background: colors.gray200,
+                        padding: `${spacing.xs} ${spacing.sm}`,
+                        borderRadius: borderRadius.sm,
+                        color: colors.textSecondary
+                      }}>
+                        ID: {event.id}
+                      </span>
+                      <span style={{
+                        fontSize: typography.fontSize.xs,
+                        color: colors.textMuted
+                      }}>
+                        {new Date(event.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
-                    <h4 style={{ margin: "0 0 10px 0", fontSize: "20px", color: "#333" }}>{event.title}</h4>
-                    <p style={{ margin: 0, color: "#666", fontSize: "15px", lineHeight: "1.6" }}>
-                      <span style={{ fontWeight: "bold", color: "#667eea" }}>{event.creatorName}</span>님이 작성
+                    <h4 style={{
+                      margin: `0 0 ${spacing.sm} 0`,
+                      fontSize: typography.fontSize.xl,
+                      color: colors.textPrimary,
+                      fontWeight: typography.fontWeight.semibold,
+                    }}>
+                      {event.title}
+                    </h4>
+                    <p style={{
+                      margin: 0,
+                      color: colors.textSecondary,
+                      fontSize: typography.fontSize.md,
+                      lineHeight: "1.6"
+                    }}>
+                      <span style={{
+                        fontWeight: typography.fontWeight.bold,
+                        color: colors.primary
+                      }}>
+                        {event.creatorName}
+                      </span>님이 작성
                     </p>
-                    <p style={{ margin: "10px 0 20px 0", color: "#888", fontSize: "14px", height: "40px", overflow: "hidden" }}>
+                    <p style={{
+                      margin: `${spacing.sm} 0 ${spacing.lg} 0`,
+                      color: colors.textMuted,
+                      fontSize: typography.fontSize.sm,
+                      height: "40px",
+                      overflow: "hidden"
+                    }}>
                       {event.description.length > 60 ? event.description.substring(0, 60) + "..." : event.description}
                     </p>
                   </div>
-                  
+
                   <button
                     onClick={() => handleApproveEvent(event.id)}
                     style={{
+                      ...commonStyles.button.success,
                       width: "100%",
-                      padding: "12px",
-                      background: "#28a745",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                      fontSize: "16px",
-                      transition: "background 0.2s",
                     }}
                   >
                     ✅ 승인하기

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { colors, gradients, spacing, borderRadius, shadows, typography } from '../styles/design-tokens';
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -43,21 +44,24 @@ export default function ChatWidget() {
         onClick={() => setOpen(!open)}
         style={{
           position: "fixed",
-          bottom: 20,
-          right: 20,
+          bottom: spacing.xl,
+          right: spacing.xl,
           width: 60,
           height: 60,
-          borderRadius: "50%",
-          background: "#667eea",
-          color: "white",
+          borderRadius: borderRadius.round,
+          background: gradients.primary,
+          color: colors.white,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          fontSize: 28,
+          fontSize: typography.fontSize.xxxl,
           cursor: "pointer",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+          boxShadow: shadows.lg,
           zIndex: 2000,
+          transition: 'transform 0.2s ease',
         }}
+        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
       >
         💬
       </div>
@@ -68,12 +72,12 @@ export default function ChatWidget() {
           style={{
             position: "fixed",
             bottom: 90,
-            right: 20,
+            right: spacing.xl,
             width: 320,
             height: 420,
-            background: "white",
-            borderRadius: 12,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+            background: colors.white,
+            borderRadius: borderRadius.lg,
+            boxShadow: shadows.xl,
             display: "flex",
             flexDirection: "column",
             zIndex: 2000,
@@ -82,12 +86,13 @@ export default function ChatWidget() {
           {/* 헤더 */}
           <div
             style={{
-              background: "#667eea",
-              color: "white",
-              padding: "12px 16px",
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              fontWeight: "bold",
+              background: gradients.primary,
+              color: colors.white,
+              padding: `${spacing.md} ${spacing.lg}`,
+              borderTopLeftRadius: borderRadius.lg,
+              borderTopRightRadius: borderRadius.lg,
+              fontWeight: typography.fontWeight.bold,
+              fontSize: typography.fontSize.md,
             }}
           >
             캠퍼스 챗봇
@@ -97,27 +102,41 @@ export default function ChatWidget() {
           <div
             style={{
               flex: 1,
-              padding: 12,
+              padding: spacing.md,
               overflowY: "auto",
-              background: "#f7f7fb",
+              background: colors.gray100,
             }}
           >
+            {messages.length === 0 && (
+              <div style={{
+                textAlign: 'center',
+                color: colors.textMuted,
+                fontSize: typography.fontSize.sm,
+                marginTop: spacing.xl,
+              }}>
+                무엇이든 물어보세요!
+              </div>
+            )}
+
             {messages.map((m, i) => (
               <div
                 key={i}
                 style={{
-                  marginBottom: 10,
+                  marginBottom: spacing.sm,
                   textAlign: m.role === "user" ? "right" : "left",
                 }}
               >
                 <div
                   style={{
                     display: "inline-block",
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    background: m.role === "user" ? "#667eea" : "#ececec",
-                    color: m.role === "user" ? "white" : "black",
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    borderRadius: spacing.sm,
+                    background: m.role === "user" ? gradients.primary : colors.white,
+                    color: m.role === "user" ? colors.white : colors.textPrimary,
                     maxWidth: "75%",
+                    boxShadow: shadows.sm,
+                    fontSize: typography.fontSize.sm,
+                    lineHeight: '1.4',
                   }}
                 >
                   {m.text}
@@ -125,16 +144,27 @@ export default function ChatWidget() {
               </div>
             ))}
 
-            {loading && <div style={{ fontSize: 12 }}>⏳ 답변 생성 중...</div>}
+            {loading && (
+              <div style={{
+                fontSize: typography.fontSize.sm,
+                color: colors.textMuted,
+                fontStyle: 'italic',
+              }}>
+                ⏳ 답변 생성 중...
+              </div>
+            )}
           </div>
 
           {/* 입력창 */}
           <div
             style={{
-              borderTop: "1px solid #ddd",
-              padding: 8,
+              borderTop: `1px solid ${colors.gray300}`,
+              padding: spacing.sm,
               display: "flex",
-              gap: 6,
+              gap: spacing.xs,
+              background: colors.white,
+              borderBottomLeftRadius: borderRadius.lg,
+              borderBottomRightRadius: borderRadius.lg,
             }}
           >
             <input
@@ -144,20 +174,24 @@ export default function ChatWidget() {
               placeholder="메시지를 입력하세요"
               style={{
                 flex: 1,
-                padding: "6px 10px",
-                borderRadius: 6,
-                border: "1px solid #ccc",
+                padding: `${spacing.xs} ${spacing.sm}`,
+                borderRadius: borderRadius.sm,
+                border: `1px solid ${colors.gray300}`,
+                fontSize: typography.fontSize.sm,
+                outline: 'none',
               }}
             />
             <button
               onClick={sendMessage}
               style={{
-                background: "#667eea",
-                color: "white",
+                background: gradients.primary,
+                color: colors.white,
                 border: "none",
-                padding: "6px 12px",
-                borderRadius: 6,
+                padding: `${spacing.xs} ${spacing.md}`,
+                borderRadius: borderRadius.sm,
                 cursor: "pointer",
+                fontWeight: typography.fontWeight.semibold,
+                fontSize: typography.fontSize.sm,
               }}
             >
               전송

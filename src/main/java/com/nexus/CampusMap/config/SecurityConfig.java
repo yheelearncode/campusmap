@@ -57,9 +57,12 @@ public class SecurityConfig {
             // 4. 권한 부여 규칙 설정
             .authorizeHttpRequests(authz -> authz
             		.requestMatchers(HttpMethod.GET, "/api/events").permitAll()
+            		.requestMatchers(HttpMethod.GET, "/api/events/*/comments").permitAll()
             		.requestMatchers(
             		        "/api/users/login", "/api/users/signup",
-            		        "/api/auth/login", "/api/auth/signup" 
+            		        "/api/auth/login", "/api/auth/signup",
+            		        "/uploads/**",  // 이미지 업로드 경로 허용
+            		        "/api/translate"  // 번역 API 허용
             		    ).permitAll()
             		    
             		    .anyRequest().authenticated()

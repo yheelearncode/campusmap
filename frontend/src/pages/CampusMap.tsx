@@ -1,14 +1,16 @@
 // window kakao 선언부, React import 유지
 import React, { useEffect, useRef, useState } from "react";
 import Button from 'react-bootstrap/Button';
-import ToggleButton from "react-bootstrap/ToggleButton";
-import Form from 'react-bootstrap/Form';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 
 import { ui_translations } from './constants/translations'
 import { useNavigate } from "react-router-dom";
+
+// Design tokens
+import { colors, spacing, borderRadius, typography, gradients, shadows } from '../styles/design-tokens';
+import { campusMapStyles, zIndex } from '../styles/campus-map-styles';
 
 // (필요 시 수정) 챗봇 위젯 import
 import ChatWidget from "../components/ChatWidget";
@@ -31,7 +33,7 @@ interface EventDetail {
   endsAt?: string;
   lat: number;
   lon: number;
-  likes?: number;
+
   comments?: { user: string; content: string }[];
   imageUrl?: string;
   creatorId?: number;
@@ -546,35 +548,133 @@ export default function CampusMap() {
   // 네비게이션 바
   function NavBar({ name }: { name: string | null }) {
     return (
-      <Navbar className="bg-body-tertiary" bg="dark" data-bs-theme="dark">
+      <Navbar
+        style={{
+          background: gradients.primary,
+          padding: `${spacing.md} ${spacing.xl}`,
+          boxShadow: shadows.lg,
+        }}
+      >
         <Container fluid>
-          <Navbar.Brand><strong>{t.main.title}</strong></Navbar.Brand>
+          <Navbar.Brand style={{
+            color: colors.white,
+            fontWeight: typography.fontWeight.bold,
+            fontSize: typography.fontSize.xl,
+          }}>
+            <strong>{t.main.title}</strong>
+          </Navbar.Brand>
           <Navbar.Collapse className="justify-content-end">
-            <ToggleButton
-              id="toggle-check"
-              type="checkbox"
-              variant="secondary"
-              value="1"
-              className="me-2"
-              checked={showSchedule}
-              onChange={(e) => setShowSchedule(e.currentTarget.checked)}
+            {/* 이벤트 목록 토글 */}
+            <button
+              onClick={() => setShowSchedule(!showSchedule)}
+              style={{
+                borderRadius: borderRadius.sm,
+                padding: `${spacing.xs} ${spacing.md}`,
+                fontWeight: typography.fontWeight.medium,
+                fontSize: typography.fontSize.sm,
+                border: `2px solid ${colors.white}`,
+                background: showSchedule ? 'rgba(255,255,255,0.25)' : 'transparent',
+                color: colors.white,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                marginRight: spacing.sm,
+              }}
+              onMouseOver={(e) => {
+                if (!showSchedule) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+              }}
+              onMouseOut={(e) => {
+                if (!showSchedule) e.currentTarget.style.background = 'transparent';
+              }}
             >
               {t.main.event_list}
-            </ToggleButton>
-            <Button variant="primary" onClick={() => setIsAddMode(!isAddMode)}>
+            </button>
+
+            {/* 이벤트 추가 버튼 */}
+            <button
+              onClick={() => setIsAddMode(!isAddMode)}
+              style={{
+                borderRadius: borderRadius.sm,
+                padding: `${spacing.xs} ${spacing.md}`,
+                fontWeight: typography.fontWeight.semibold,
+                fontSize: typography.fontSize.sm,
+                border: `2px solid ${colors.white}`,
+                background: isAddMode ? 'rgba(255,255,255,0.25)' : 'transparent',
+                color: colors.white,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                marginRight: spacing.sm,
+              }}
+              onMouseOver={(e) => {
+                if (!isAddMode) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+              }}
+              onMouseOut={(e) => {
+                if (!isAddMode) e.currentTarget.style.background = 'transparent';
+              }}
+            >
               {isAddMode ? t.main.cancel : t.main.add_event}
-            </Button>
-            <Navbar.Text className="ms-5">
-              <strong>{name}</strong>
-            </Navbar.Text>
+            </button>
+
+            {/* 사용자 이름 */}
+            <span style={{
+              color: colors.white,
+              fontWeight: typography.fontWeight.medium,
+              fontSize: typography.fontSize.sm,
+              marginLeft: spacing.lg,
+              marginRight: spacing.sm,
+            }}>
+              {name}
+            </span>
+
+            {/* 관리자 페이지 버튼 */}
             {currentUserInfo && currentUserInfo.role === "ADMIN" && (
-              <Button onClick={() => navigate("/admin")} variant="warning" className="ms-2">
+              <button
+                onClick={() => navigate("/admin")}
+                style={{
+                  borderRadius: borderRadius.sm,
+                  padding: `${spacing.xs} ${spacing.md}`,
+                  fontWeight: typography.fontWeight.medium,
+                  fontSize: typography.fontSize.sm,
+                  border: `2px solid ${colors.white}`,
+                  background: 'transparent',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  marginRight: spacing.sm,
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
                 관리자 페이지
-              </Button>
+              </button>
             )}
-            <Button onClick={handleLogout} variant="dark" className="ms-2">
+
+            {/* 로그아웃 버튼 */}
+            <button
+              onClick={handleLogout}
+              style={{
+                borderRadius: borderRadius.sm,
+                padding: `${spacing.xs} ${spacing.md}`,
+                fontWeight: typography.fontWeight.medium,
+                fontSize: typography.fontSize.sm,
+                border: `2px solid ${colors.white}`,
+                background: 'transparent',
+                color: colors.white,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
               {t.main.logout}
-            </Button>
+            </button>
           </Navbar.Collapse>
         </Container>
       </Navbar>
@@ -694,32 +794,7 @@ export default function CampusMap() {
     }
   };
 
-  // 좋아요 핸들러
-  const handleLike = async () => {
-    if (!eventDetails) return;
 
-    // 낙관적 업데이트 (Optimistic Update)
-    setEventDetails((prev) => (prev ? { ...prev, likes: (prev.likes || 0) + 1 } : null));
-
-    try {
-      const res = await fetch(`/api/events/${eventDetails.id}/like`, {
-        method: "POST",
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        // 서버 응답값으로 확정
-        setEventDetails((prev) => (prev ? { ...prev, likes: data.likes } : null));
-
-        // 목록에도 반영
-        setEventList((prev) =>
-          prev.map((e) => (e.id === eventDetails.id ? { ...e, likes: data.likes } : e))
-        );
-      }
-    } catch (e) {
-      console.error("Like failed", e);
-    }
-  };
 
   return (
     <div
@@ -751,20 +826,7 @@ export default function CampusMap() {
       {/* 이벤트 추가 모드 안내 메시지 */}
       {
         isAddMode && (
-          <div
-            style={{
-              position: "absolute",
-              top: 80,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "#667eea",
-              color: "white",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              zIndex: 700,
-            }}
-          >
+          <div style={campusMapStyles.addModeGuide}>
             {t.main.add_guide}
           </div>
         )
@@ -774,59 +836,247 @@ export default function CampusMap() {
       {/* ================== 등록 모달 ================== */}
       {
         showForm && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 2000,
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: 20,
-                borderRadius: 12,
-                width: 400,
-              }}
-            >
-              <h2>{t.add.title}</h2>
+          <div style={{ ...campusMapStyles.modalOverlay, zIndex: zIndex.modalEdit }}>
+            <div style={{
+              background: colors.white,
+              padding: spacing.xl,
+              borderRadius: borderRadius.md,
+              width: '450px',
+              maxWidth: '90%',
+              boxShadow: shadows.lg,
+            }}>
+              <h2 style={{
+                margin: `0 0 ${spacing.md} 0`,
+                fontSize: typography.fontSize.xl,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.textPrimary,
+                textAlign: 'center',
+                background: gradients.primary,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>
+                {t.add.title}
+              </h2>
 
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <input
-                  name="title"
-                  placeholder={t.add.title_placeholder}
-                  value={form.title}
-                  onChange={onFormChange}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
-
-                <textarea
-                  name="description"
-                  placeholder={t.add.description_placeholder}
-                  value={form.description}
-                  onChange={onFormChange}
-                  rows={4}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
-
-                <Form.Control type="file" accept="image/*" onChange={onImageChange} />
-
-                <div style={{ display: "flex", gap: 10 }}>
-                  <input type="datetime-local" name="startsAt" value={form.startsAt} onChange={onFormChange} />
-                  <input type="datetime-local" name="endsAt" value={form.endsAt} onChange={onFormChange} />
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+                {/* 제목 입력 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    제목 *
+                  </label>
+                  <input
+                    name="title"
+                    placeholder={t.add.title_placeholder}
+                    value={form.title}
+                    onChange={onFormChange}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: spacing.md,
+                      border: `2px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      fontSize: typography.fontSize.md,
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = colors.primary}
+                    onBlur={(e) => e.target.style.borderColor = colors.gray300}
+                  />
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                  <Button type="button" variant="light" onClick={() => setShowForm(false)}>
+                {/* 설명 입력 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    내용 *
+                  </label>
+                  <textarea
+                    name="description"
+                    placeholder={t.add.description_placeholder}
+                    value={form.description}
+                    onChange={onFormChange}
+                    required
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: spacing.md,
+                      border: `2px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      fontSize: typography.fontSize.md,
+                      resize: 'vertical',
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                      fontFamily: typography.fontFamily,
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = colors.primary}
+                    onBlur={(e) => e.target.style.borderColor = colors.gray300}
+                  />
+                </div>
+
+                {/* 이미지 업로드 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    이미지
+                  </label>
+                  <label style={{
+                    display: 'block',
+                    padding: spacing.lg,
+                    border: `2px dashed ${colors.gray300}`,
+                    borderRadius: borderRadius.md,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    background: colors.gray100,
+                  }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.background = colors.primaryLight + '20';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = colors.gray300;
+                      e.currentTarget.style.background = colors.gray100;
+                    }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onImageChange}
+                      style={{ display: 'none' }}
+                    />
+                    <span style={{ color: colors.textSecondary, fontSize: typography.fontSize.sm }}>
+                      {imageFile ? ` ${imageFile.name}` : '📁 파일 선택 또는 드래그'}
+                    </span>
+                  </label>
+                </div>
+
+                {/* 날짜 선택 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    일정
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: spacing.xs,
+                        fontSize: typography.fontSize.xs,
+                        color: colors.textMuted,
+                      }}>시작</label>
+                      <input
+                        type="datetime-local"
+                        name="startsAt"
+                        value={form.startsAt}
+                        onChange={onFormChange}
+                        style={{
+                          width: '100%',
+                          padding: spacing.sm,
+                          border: `1px solid ${colors.gray300}`,
+                          borderRadius: borderRadius.md,
+                          fontSize: typography.fontSize.sm,
+                          outline: 'none',
+                          background: colors.white,
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: spacing.xs,
+                        fontSize: typography.fontSize.xs,
+                        color: colors.textMuted,
+                      }}>종료</label>
+                      <input
+                        type="datetime-local"
+                        name="endsAt"
+                        value={form.endsAt}
+                        onChange={onFormChange}
+                        style={{
+                          width: '100%',
+                          padding: spacing.sm,
+                          border: `1px solid ${colors.gray300}`,
+                          borderRadius: borderRadius.md,
+                          fontSize: typography.fontSize.sm,
+                          outline: 'none',
+                          background: colors.white,
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 버튼 */}
+                <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.md }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    style={{
+                      flex: 1,
+                      padding: `${spacing.md} ${spacing.xl}`,
+                      border: `2px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      background: colors.white,
+                      color: colors.textSecondary,
+                      fontSize: typography.fontSize.md,
+                      fontWeight: typography.fontWeight.semibold,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = colors.gray100}
+                    onMouseOut={(e) => e.currentTarget.style.background = colors.white}
+                  >
                     {t.add.cancel}
-                  </Button>
-                  <Button type="submit" variant="primary">
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      flex: 1,
+                      padding: `${spacing.md} ${spacing.xl}`,
+                      border: 'none',
+                      borderRadius: borderRadius.md,
+                      background: gradients.primary,
+                      color: colors.white,
+                      fontSize: typography.fontSize.md,
+                      fontWeight: typography.fontWeight.bold,
+                      cursor: 'pointer',
+                      boxShadow: shadows.primary,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = shadows.lg;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = shadows.primary;
+                    }}
+                  >
                     {t.add.post}
-                  </Button>
+                  </button>
                 </div>
               </form>
             </div>
@@ -837,88 +1087,142 @@ export default function CampusMap() {
       {/* ================== 상세 모달 ================== */}
       {
         eventDetails && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 3000,
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: 20,
-                borderRadius: 12,
-                width: "90%",
-                maxWidth: 550,
-                maxHeight: "90vh",
-                overflowY: "auto",
-              }}
-            >
-              <h3>{isTranslating ? "번역 중..." : translatedTitle}</h3>
+          <div style={{ ...campusMapStyles.modalOverlay, zIndex: zIndex.modalDetail }}>
+            <div style={{
+              background: colors.white,
+              padding: spacing.xxxl,
+              borderRadius: borderRadius.lg,
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: shadows.xl,
+            }}>
+              {/* 제목 */}
+              <h3 style={{
+                margin: `0 0 ${spacing.md} 0`,
+                fontSize: typography.fontSize.xxl,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.textPrimary,
+                lineHeight: 1.4,
+              }}>
+                {isTranslating ? "번역 중..." : translatedTitle}
+              </h3>
 
+              {/* 이미지 */}
               {eventDetails.imageUrl && (
                 <img
                   src={eventDetails.imageUrl}
                   style={{
-                    width: "100%",
-                    borderRadius: 10,
-                    marginBottom: 12,
+                    width: '100%',
+                    borderRadius: borderRadius.md,
+                    marginBottom: spacing.md,
+                    objectFit: 'cover',
+                    maxHeight: '300px',
                   }}
+                  alt={eventDetails.title}
                 />
               )}
 
-              <p style={{ color: '#666' }}>
-                {eventDetails.startsAt ? t.detail.from_prefix + new Date(eventDetails.startsAt).toLocaleString() + t.detail.from_suffix : ""} <br />
-                {eventDetails.endsAt ? t.detail.to_prefix + new Date(eventDetails.endsAt).toLocaleString() + t.detail.to_suffix : ""}
+              {/* 날짜 정보 */}
+              {(eventDetails.startsAt || eventDetails.endsAt) && (
+                <div style={{
+                  background: colors.gray100,
+                  padding: spacing.md,
+                  borderRadius: borderRadius.md,
+                  marginBottom: spacing.md,
+                  fontSize: typography.fontSize.sm,
+                  color: colors.textSecondary,
+                  lineHeight: 1.6,
+                }}>
+                  {eventDetails.startsAt && (
+                    <div>{t.detail.from_prefix}{new Date(eventDetails.startsAt).toLocaleString()}{t.detail.from_suffix}</div>
+                  )}
+                  {eventDetails.endsAt && (
+                    <div>{t.detail.to_prefix}{new Date(eventDetails.endsAt).toLocaleString()}{t.detail.to_suffix}</div>
+                  )}
+                </div>
+              )}
+
+              {/* 설명 */}
+              <p style={{
+                color: colors.textPrimary,
+                fontSize: typography.fontSize.md,
+                lineHeight: 1.6,
+                marginBottom: spacing.md,
+                whiteSpace: 'pre-wrap',
+              }}>
+                {isTranslating ? '번역 중...' : translatedDescription}
               </p>
 
-
-              <p>{isTranslating ? 'Translating...' : translatedDescription/*eventDetails.description*/}</p>
-              <p>{isTranslating ? "..." : translatedDescription}</p>
-
-              <p style={{ color: "#666", marginTop: 10 }}>
-                작성자: <b>{eventDetails.creatorName || "정보 없음"}</b>
-              </p>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-                <span>{t.detail.likes}: <b>{eventDetails.likes ?? 0}</b></span>
-                <button
-                  onClick={handleLike}
-                  style={{
-                    background: "none",
-                    border: "1px solid #ff4d4f",
-                    color: "#ff4d4f",
-                    borderRadius: "50%",
-                    width: 32,
-                    height: 32,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.2rem",
-                    paddingBottom: 2,
-                  }}
-                  title="좋아요"
-                >
-                  ♥
-                </button>
+              {/* 작성자 */}
+              <div style={{
+                fontSize: typography.fontSize.sm,
+                color: colors.textSecondary,
+                marginBottom: spacing.md,
+              }}>
+                작성자: <span style={{ fontWeight: typography.fontWeight.semibold, color: colors.textPrimary }}>{eventDetails.creatorName || "정보 없음"}</span>
               </div>
 
+              {/* 길찾기 버튼 */}
+              {eventDetails.latitude && eventDetails.longitude && (
+                <button
+                  onClick={() => {
+                    const url = `https://map.kakao.com/link/to/${encodeURIComponent(eventDetails.title)},${eventDetails.latitude},${eventDetails.longitude}`;
+                    window.open(url, '_blank');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: spacing.md,
+                    border: 'none',
+                    borderRadius: borderRadius.md,
+                    background: '#FEE500',
+                    color: '#000000',
+                    fontSize: typography.fontSize.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    marginBottom: spacing.lg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: spacing.sm,
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#FDD835'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#FEE500'}
+                >
+                  🗺️ 카카오맵으로 길찾기
+                </button>
+              )}
+
+              {/* 수정/삭제 버튼 */}
               {canEditOrDelete(eventDetails) && (
-                <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 20 }}>
+                <div style={{
+                  display: 'flex',
+                  gap: spacing.sm,
+                  marginBottom: spacing.lg,
+                }}>
                   <button
                     onClick={handleEditEvent}
                     style={{
-                      background: "#007bff",
-                      color: "white",
-                      padding: "8px 15px",
-                      borderRadius: 8,
-                      border: "none",
+                      flex: 1,
+                      padding: `${spacing.sm} ${spacing.md}`,
+                      border: `1px solid ${colors.primary}`,
+                      borderRadius: borderRadius.md,
+                      background: colors.white,
+                      color: colors.primary,
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.medium,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = colors.primary;
+                      e.currentTarget.style.color = colors.white;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = colors.white;
+                      e.currentTarget.style.color = colors.primary;
                     }}
                   >
                     수정
@@ -927,11 +1231,24 @@ export default function CampusMap() {
                   <button
                     onClick={handleDeleteEvent}
                     style={{
-                      background: "#dc3545",
-                      color: "white",
-                      padding: "8px 15px",
-                      borderRadius: 8,
-                      border: "none",
+                      flex: 1,
+                      padding: `${spacing.sm} ${spacing.md}`,
+                      border: `1px solid ${colors.danger}`,
+                      borderRadius: borderRadius.md,
+                      background: colors.white,
+                      color: colors.danger,
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.medium,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = colors.danger;
+                      e.currentTarget.style.color = colors.white;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = colors.white;
+                      e.currentTarget.style.color = colors.danger;
                     }}
                   >
                     삭제
@@ -939,104 +1256,160 @@ export default function CampusMap() {
                 </div>
               )}
 
-              <hr style={{ margin: "20px 0" }} />
+              {/* 구분선 */}
+              <div style={{
+                height: '1px',
+                background: colors.gray200,
+                margin: `${spacing.md} 0`,
+              }} />
 
               {/* 댓글 섹션 */}
               <div>
-                <h5>댓글 ({comments.length})</h5>
-                <div
-                  style={{
-                    maxHeight: 200,
-                    overflowY: "auto",
-                    background: "#f8f9fa",
-                    padding: 10,
-                    borderRadius: 8,
-                    marginBottom: 10,
-                  }}
-                >
+                <h5 style={{
+                  margin: `0 0 ${spacing.md} 0`,
+                  fontSize: typography.fontSize.md,
+                  fontWeight: typography.fontWeight.semibold,
+                  color: colors.textPrimary,
+                }}>
+                  댓글 ({comments.length})
+                </h5>
+
+                {/* 댓글 목록 */}
+                <div style={{
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  marginBottom: spacing.md,
+                }}>
                   {comments.length === 0 ? (
-                    <p style={{ color: "#aaa", textAlign: "center" }}>첫 댓글을 남겨보세요!</p>
+                    <div style={{
+                      padding: spacing.lg,
+                      textAlign: 'center',
+                      color: colors.textMuted,
+                      fontSize: typography.fontSize.sm,
+                      background: colors.gray100,
+                      borderRadius: borderRadius.md,
+                    }}>
+                      첫 댓글을 남겨보세요
+                    </div>
                   ) : (
                     comments.map((c) => (
                       <div
                         key={c.id}
                         style={{
-                          borderBottom: "1px solid #eee",
-                          padding: "8px 0",
-                          display: "flex",
-                          justifyContent: "space-between",
+                          padding: spacing.md,
+                          borderBottom: `1px solid ${colors.gray200}`,
                         }}
                       >
-                        <div>
-                          <div style={{ fontWeight: "bold", fontSize: "0.9em" }}>
-                            {c.userName}
-                            <span style={{ fontWeight: "normal", color: "#aaa", marginLeft: 8, fontSize: "0.8em" }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: spacing.xs,
+                        }}>
+                          <div>
+                            <span style={{
+                              fontWeight: typography.fontWeight.semibold,
+                              fontSize: typography.fontSize.sm,
+                              color: colors.textPrimary,
+                            }}>
+                              {c.userName}
+                            </span>
+                            <span style={{
+                              marginLeft: spacing.sm,
+                              fontSize: typography.fontSize.xs,
+                              color: colors.textMuted,
+                            }}>
                               {new Date(c.createdAt).toLocaleString()}
                             </span>
                           </div>
-                          <div>{c.content}</div>
+                          {c.isMine && (
+                            <button
+                              onClick={() => handleDeleteComment(c.id)}
+                              style={{
+                                border: 'none',
+                                background: 'transparent',
+                                color: colors.danger,
+                                fontSize: typography.fontSize.xs,
+                                cursor: 'pointer',
+                                padding: spacing.xs,
+                              }}
+                            >
+                              삭제
+                            </button>
+                          )}
                         </div>
-                        {c.isMine && (
-                          <button
-                            onClick={() => handleDeleteComment(c.id)}
-                            style={{
-                              border: "none",
-                              background: "none",
-                              color: "#dc3545",
-                              fontSize: "0.8em",
-                              cursor: "pointer",
-                            }}
-                          >
-                            삭제
-                          </button>
-                        )}
+                        <div style={{
+                          fontSize: typography.fontSize.sm,
+                          color: colors.textPrimary,
+                          lineHeight: 1.5,
+                        }}>
+                          {c.content}
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
+                {/* 댓글 입력 */}
+                <div style={{ display: 'flex', gap: spacing.sm }}>
                   <input
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="댓글을 입력하세요..."
                     style={{
                       flex: 1,
-                      padding: 8,
-                      borderRadius: 6,
-                      border: "1px solid #ccc",
+                      padding: spacing.sm,
+                      border: `1px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      fontSize: typography.fontSize.sm,
+                      outline: 'none',
                     }}
+                    onFocus={(e) => e.target.style.borderColor = colors.primary}
+                    onBlur={(e) => e.target.style.borderColor = colors.gray300}
                     onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
                   />
                   <button
                     onClick={handleAddComment}
                     style={{
-                      background: "#667eea",
-                      color: "white",
-                      border: "none",
-                      padding: "8px 16px",
-                      borderRadius: 6,
-                      cursor: "pointer",
+                      padding: `${spacing.sm} ${spacing.lg}`,
+                      border: 'none',
+                      borderRadius: borderRadius.md,
+                      background: colors.primary,
+                      color: colors.white,
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.medium,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
                     }}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
                   >
                     등록
                   </button>
                 </div>
               </div>
 
-              <Button
+              {/* 닫기 버튼 */}
+              <button
                 onClick={() => setEventDetails(null)}
-                variant="outline-secondary"
                 style={{
-                  marginTop: 20,
-                  padding: "10px 15px",
-                  borderRadius: 8,
-                  border: "1px solid #ccc",
-                  background: "white",
+                  width: '100%',
+                  marginTop: spacing.lg,
+                  padding: spacing.sm,
+                  border: `1px solid ${colors.gray300}`,
+                  borderRadius: borderRadius.md,
+                  background: colors.white,
+                  color: colors.textSecondary,
+                  fontSize: typography.fontSize.sm,
+                  fontWeight: typography.fontWeight.medium,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
+                onMouseOver={(e) => e.currentTarget.style.background = colors.gray100}
+                onMouseOut={(e) => e.currentTarget.style.background = colors.white}
               >
                 {t.detail.close}
-              </Button>
+              </button>
             </div>
           </div>
         )
@@ -1045,85 +1418,263 @@ export default function CampusMap() {
       {/* ================== 수정 모달 ================== */}
       {
         isEditMode && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 2500,
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: 20,
-                borderRadius: 12,
-                width: 400,
-              }}
-            >
-              <h2>이벤트 수정</h2>
+          <div style={{ ...campusMapStyles.modalOverlay, zIndex: zIndex.modalEdit }}>
+            <div style={{
+              background: colors.white,
+              padding: spacing.xl,
+              borderRadius: borderRadius.md,
+              width: '450px',
+              maxWidth: '90%',
+              boxShadow: shadows.lg,
+            }}>
+              <h2 style={{
+                margin: `0 0 ${spacing.md} 0`,
+                fontSize: typography.fontSize.xl,
+                fontWeight: typography.fontWeight.bold,
+                color: colors.textPrimary,
+                textAlign: 'center',
+              }}>
+                이벤트 수정
+              </h2>
 
-              <form onSubmit={handleUpdateSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <input
-                  name="title"
-                  placeholder="제목"
-                  value={editForm.title}
-                  onChange={onEditFormChange}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
+              <form onSubmit={handleUpdateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+                {/* 제목 입력 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    제목 *
+                  </label>
+                  <input
+                    name="title"
+                    placeholder="제목"
+                    value={editForm.title}
+                    onChange={onEditFormChange}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: spacing.md,
+                      border: `2px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      fontSize: typography.fontSize.md,
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = colors.primary}
+                    onBlur={(e) => e.target.style.borderColor = colors.gray300}
+                  />
+                </div>
 
-                <textarea
-                  name="description"
-                  placeholder="내용"
-                  value={editForm.description}
-                  onChange={onEditFormChange}
-                  rows={4}
-                  style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-                />
+                {/* 설명 입력 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    내용 *
+                  </label>
+                  <textarea
+                    name="description"
+                    placeholder="내용"
+                    value={editForm.description}
+                    onChange={onEditFormChange}
+                    required
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: spacing.md,
+                      border: `2px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      fontSize: typography.fontSize.md,
+                      resize: 'vertical',
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                      fontFamily: typography.fontFamily,
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = colors.primary}
+                    onBlur={(e) => e.target.style.borderColor = colors.gray300}
+                  />
+                </div>
 
+                {/* 현재 이미지 */}
                 {currentImageUrl && (
-                  <div style={{ marginBottom: 8 }}>
-                    <p style={{ fontSize: 14, color: "#666", marginBottom: 4 }}>현재 이미지:</p>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: spacing.sm,
+                      fontWeight: typography.fontWeight.semibold,
+                      color: colors.textSecondary,
+                      fontSize: typography.fontSize.sm,
+                    }}>
+                      현재 이미지
+                    </label>
                     <img
                       src={currentImageUrl}
                       style={{
-                        width: "100%",
+                        width: '100%',
                         maxHeight: 200,
-                        objectFit: "cover",
-                        borderRadius: 8,
+                        objectFit: 'cover',
+                        borderRadius: borderRadius.md,
                       }}
+                      alt="현재 이미지"
                     />
                   </div>
                 )}
 
-                <input type="file" accept="image/*" onChange={onEditImageChange} />
-
-                <div style={{ display: "flex", gap: 10 }}>
-                  <input
-                    type="datetime-local"
-                    name="startsAt"
-                    value={editForm.startsAt}
-                    onChange={onEditFormChange}
-                  />
-                  <input
-                    type="datetime-local"
-                    name="endsAt"
-                    value={editForm.endsAt}
-                    onChange={onEditFormChange}
-                  />
+                {/* 이미지 업로드 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    이미지 변경
+                  </label>
+                  <label style={{
+                    display: 'block',
+                    padding: spacing.lg,
+                    border: `2px dashed ${colors.gray300}`,
+                    borderRadius: borderRadius.md,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    background: colors.gray100,
+                  }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.background = colors.primaryLight + '20';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = colors.gray300;
+                      e.currentTarget.style.background = colors.gray100;
+                    }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onEditImageChange}
+                      style={{ display: 'none' }}
+                    />
+                    <span style={{ color: colors.textSecondary, fontSize: typography.fontSize.sm }}>
+                      {editImageFile ? ` ${editImageFile.name}` : '파일 선택'}
+                    </span>
+                  </label>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                  <button type="button" onClick={() => setIsEditMode(false)}>
+                {/* 날짜 선택 */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: spacing.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: colors.textSecondary,
+                    fontSize: typography.fontSize.sm,
+                  }}>
+                    일정
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: spacing.xs,
+                        fontSize: typography.fontSize.xs,
+                        color: colors.textMuted,
+                      }}>시작</label>
+                      <input
+                        type="datetime-local"
+                        name="startsAt"
+                        value={editForm.startsAt}
+                        onChange={onEditFormChange}
+                        style={{
+                          width: '100%',
+                          padding: spacing.sm,
+                          border: `1px solid ${colors.gray300}`,
+                          borderRadius: borderRadius.md,
+                          fontSize: typography.fontSize.sm,
+                          outline: 'none',
+                          background: colors.white,
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: spacing.xs,
+                        fontSize: typography.fontSize.xs,
+                        color: colors.textMuted,
+                      }}>종료</label>
+                      <input
+                        type="datetime-local"
+                        name="endsAt"
+                        value={editForm.endsAt}
+                        onChange={onEditFormChange}
+                        style={{
+                          width: '100%',
+                          padding: spacing.sm,
+                          border: `1px solid ${colors.gray300}`,
+                          borderRadius: borderRadius.md,
+                          fontSize: typography.fontSize.sm,
+                          outline: 'none',
+                          background: colors.white,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 버튼 */}
+                <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.md }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditMode(false)}
+                    style={{
+                      flex: 1,
+                      padding: `${spacing.md} ${spacing.xl}`,
+                      border: `2px solid ${colors.gray300}`,
+                      borderRadius: borderRadius.md,
+                      background: colors.white,
+                      color: colors.textSecondary,
+                      fontSize: typography.fontSize.md,
+                      fontWeight: typography.fontWeight.semibold,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = colors.gray100}
+                    onMouseOut={(e) => e.currentTarget.style.background = colors.white}
+                  >
                     취소
                   </button>
-
                   <button
                     type="submit"
-                    style={{ background: "#007bff", color: "white", padding: "8px 15px" }}
+                    style={{
+                      flex: 1,
+                      padding: `${spacing.md} ${spacing.xl}`,
+                      border: 'none',
+                      borderRadius: borderRadius.md,
+                      background: gradients.primary,
+                      color: colors.white,
+                      fontSize: typography.fontSize.md,
+                      fontWeight: typography.fontWeight.bold,
+                      cursor: 'pointer',
+                      boxShadow: shadows.primary,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = shadows.lg;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = shadows.primary;
+                    }}
                   >
                     수정 완료
                   </button>
@@ -1139,25 +1690,8 @@ export default function CampusMap() {
       =========================== */}
       {
         showProfileModal && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 5000,
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: 20,
-                borderRadius: 12,
-                width: 380,
-              }}
-            >
+          <div style={{ ...campusMapStyles.modalOverlay, zIndex: zIndex.modalProfile }}>
+            <div style={{ ...campusMapStyles.modalContentSmall, width: '380px' }}>
               <h3 style={{ marginBottom: 16 }}>프로필 수정</h3>
 
               {/* 닉네임 변경 */}
