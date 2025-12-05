@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container';
+import Navbar from 'react-bootstrap/Navbar';
 
 import { ui_translations } from './constants/translations'
 import { useNavigate } from "react-router-dom";
@@ -22,6 +23,88 @@ declare global {
 }
 
 const KAKAO_MAP_API_KEY = import.meta.env.VITE_KAKAO_API_KEY;
+
+interface FloorInfo {
+  name: string;
+  description: string;
+}
+
+// 건물 타입 정의
+interface BuildingData {
+  id?: number;
+  name: string;
+  lat: number;
+  lon: number;
+  floors?: FloorInfo[];
+}
+
+// 초기 건물 데이터 (API 로드 전 사용)
+const CAMPUS_BUILDINGS: BuildingData[] = [
+  { name: '청운관', lat: 36.627317, lon: 127.450449, floors: [{ name: '지하1층', description: '주차장, 기계실' },
+      { name: '1층',    description: '로비, 강의실, 연구실' },
+      { name: '2층',    description: '연구실, 실험실 및 교수연구실' },] },
+  { name: '양현재', lat: 36.627072, lon: 127.450288, floors: [] },
+  { name: '등용관', lat: 36.627050, lon: 127.450991, floors: [] },
+  { name: '신민관', lat: 36.627246, lon: 127.452196, floors: [] },
+  { name: '지선관', lat: 36.628047, lon: 127.452491, floors: [] },
+  { name: '승리관', lat: 36.628521, lon: 127.451381, floors: [] },
+  { name: '종양연구소', lat: 36.628697, lon: 127.451757, floors: [] },
+  { name: '첨담바이오연구센터', lat: 36.628710, lon: 127.452159, floors: [] },
+  { name: '농업생명환경대학', lat: 36.630210, lon: 127.452838, floors: [] },
+  { name: '농대강의동', lat: 36.629483, lon: 127.452500, floors: [] },
+  { name: '농대부속건물', lat: 36.631035, lon: 127.451843, floors: [] },
+  { name: '온실관리동', lat: 36.630620, lon: 127.451741, floors: [] },
+  { name: '대학본부', lat: 36.630088, lon: 127.454726, floors: [] },
+  { name: '법학전문대학원', lat: 36.632188, lon: 127.454206, floors: [] },
+  { name: '산학협력관', lat: 36.632479, lon: 127.455201, floors: [] },
+  { name: '형설관', lat: 36.632479, lon: 127.455201, floors: [] },
+  { name: '인재양성원', lat: 36.632479, lon: 127.455201, floors: [] },
+  { name: '국제교류본부2호관', lat: 36.632479, lon: 127.455201, floors: [] },
+  { name: '보육교사교육원', lat: 36.633083, lon: 127.456509, floors: [] },
+  { name: '언어교육관', lat: 36.633273, lon: 127.457045, floors: [] },
+  { name: '인문사회관', lat: 36.630979, lon: 127.456502, floors: [] },
+  { name: '개성재관리동', lat: 36.631502, lon: 127.457542, floors: [] },
+  { name: '진리관', lat: 36.630990, lon: 127.457791, floors: [] },
+  { name: '정의관', lat: 36.631184, lon: 127.458135, floors: [] },
+  { name: '개척관', lat: 36.631491, lon: 127.458320, floors: [] },
+  { name: '계영원', lat: 36.631824, lon: 127.458595, floors: [] },
+  { name: '법학관', lat: 36.630959, lon: 127.459335, floors: [] },
+  { name: '미술관', lat: 36.630836, lon: 127.457268, floors: [] },
+  { name: '경영대학', lat: 36.630099, lon: 127.456911, floors: [] },
+  { name: '사회과학대', lat: 36.629700, lon: 127.457781, floors: [] },
+  { name: '인문대학본관', lat: 36.630110, lon: 127.458731, floors: [] },
+  { name: '은하수식당', lat: 36.629885, lon: 127.460192, floors: [] },
+  { name: '역사관', lat: 36.630571, lon: 127.459873, floors: [] },
+  { name: '생활과학대학', lat: 36.630371, lon: 127.460817, floors: [] },
+  { name: '사범대학', lat: 36.628994, lon: 127.460313, floors: [] },
+  { name: '중앙도서관', lat: 36.628584, lon: 127.457329, floors: [] },
+  { name: '제1학생회관', lat: 36.627602, lon: 127.458835, floors: [] },
+  { name: '농협은행', lat: 36.627188, lon: 127.459275, floors: [] },
+  { name: '개신문화관', lat: 36.628306, lon: 127.459491, floors: [] },
+  { name: '스포츠센터', lat: 36.627255, lon: 127.460609, floors: [] },
+  { name: '학군단', lat: 36.627061, lon: 127.461742, floors: [] },
+  { name: '제2학생회관', lat: 36.627985, lon: 127.454305, floors: [] },
+  { name: '박물관', lat: 36.627733, lon: 127.455318, floors: [] },
+  { name: '전자정보대학3관', lat: 36.625614, lon: 127.454417, floors: [] },
+  { name: '자연대5호관', lat: 36.625576, lon: 127.455839, floors: [] },
+  { name: '자연대6호관', lat: 36.625025, lon: 127.455844, floors: [] },
+  { name: '나이팅게일관', lat: 36.625210, lon: 127.454803, floors: [] },
+  { name: '자연대4호관', lat: 36.626239, lon: 127.456670, floors: [] },
+  { name: '자연대2호관', lat: 36.627140, lon: 127.456886, floors: [] },
+  { name: '자연대1호관', lat: 36.627716, lon: 127.456750, floors: [] },
+  { name: '공과대학1호관', lat: 36.626767, lon: 127.458138, floors: [] },
+  { name: '공과대학2호관', lat: 36.625979, lon: 127.458831, floors: [] },
+  { name: '전자정보대학1관', lat: 36.625385, lon: 127.458123, floors: [] },
+  { name: '학연산공동기술원', lat: 36.625117, lon: 127.457158, floors: [] },
+  { name: '전자정보2관', lat: 36.624885, lon: 127.457839, floors: [] },
+  { name: '공과대학3호관', lat: 36.624505, lon: 127.458457, floors: [] },
+  { name: '공과대학5호관', lat: 36.624114, lon: 127.458042, floors: [] },
+  { name: '공학지원센터', lat: 36.624563, lon: 127.459233, floors: [] },
+  { name: '양진재', lat: 36.624277, lon: 127.459566, floors: [] },
+  { name: '예지관', lat: 36.624053, lon: 127.458998, floors: [] },
+  { name: '동물병원', lat: 36.623234, lon: 127.456129, floors: [] },
+  { name: '수의과대학2호관', lat: 36.623444, lon: 127.456851, floors: [] },
+];
 
 // 이벤트 상세 타입
 interface EventDetail {
@@ -168,8 +251,14 @@ export default function CampusMap() {
   const [isTranslating, setIsTranslating] = useState(false);
 
   const [showSchedule, setShowSchedule] = useState(false);
-  const [showNavigation, setShowNavigation] = useState(false);
+  const [activeTab, setActiveTab] = useState<'building' | 'directions' | 'events'>('events');
   const [navigationUrl, setNavigationUrl] = useState("https://map.kakao.com");
+  const [buildingOverlays, setBuildingOverlays] = useState<any[]>([]);
+  const [eventOverlays, setEventOverlays] = useState<any[]>([]);
+  const [buildingSearch, setBuildingSearch] = useState("");
+  const [campusBuildings, setCampusBuildings] = useState<BuildingData[]>(CAMPUS_BUILDINGS);
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingData | null>(null);
+  const [buildingInfoOverlay, setBuildingInfoOverlay] = useState<any>(null);
 
   // ===========================
   // ⭐ 추가된 프로필 수정 state
@@ -192,6 +281,36 @@ export default function CampusMap() {
       setCurrentUserInfo({ id: userId, name: username, role });
       setProfileForm((prev) => ({ ...prev, username }));
     }
+  }, []);
+
+  // 건물 데이터 로드 (층 정보 포함)
+  useEffect(() => {
+    const fetchBuildings = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/buildings');
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched buildings data:", data); // Debugging log
+          // API 데이터를 BuildingData 형식으로 변환
+          const buildings: BuildingData[] = data.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            lat: b.lat,
+            lon: b.lon,
+            floors: b.floors?.map((f: any) => ({
+              name: f.name,
+              description: f.description || "상세 정보 없음"
+            })) || []
+          }));
+          setCampusBuildings(buildings);
+        }
+      } catch (error) {
+        console.error('Failed to fetch buildings:', error);
+        // 에러 시 초기 데이터 사용
+      }
+    };
+
+    fetchBuildings();
   }, []);
 
   // ===========================
@@ -538,6 +657,16 @@ export default function CampusMap() {
     return () => { document.head.removeChild(script) };
   }, [isAddMode]);
 
+  // 탭 변경 시 지도 다시 그리기
+  useEffect(() => {
+    if (mapInstance && activeTab !== 'directions') {
+      // 지도 크기 재조정
+      setTimeout(() => {
+        window.kakao.maps.event.trigger(mapInstance, 'resize');
+      }, 100);
+    }
+  }, [activeTab, mapInstance]);
+
   // 로그아웃 핸들러
   const handleLogout = () => {
     if (confirm(t.main.logout_check)) {
@@ -546,231 +675,282 @@ export default function CampusMap() {
     }
   };
 
-  // 네비게이션 바
-  function NavBar({ name }: { name: string | null }) {
-    return (
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1000,
-        }}
-      >
-        <Container fluid>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 0',
-          }}>
-            {/* Left: Brand */}
-            <div style={{
-              color: colors.white,
-              fontWeight: typography.fontWeight.bold,
-              fontSize: '18px',
-              letterSpacing: '0.5px',
-            }}>
-              CBNU CAMPUSMAP
-            </div>
 
-            {/* Center: Main Navigation Tabs */}
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              position: 'absolute',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}>
-              {/* 지도 탭 */}
-              <button
-                onClick={() => setShowNavigation(false)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '8px 20px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: !showNavigation ? 'rgba(255,255,255,0.2)' : 'transparent',
-                  color: colors.white,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  minWidth: '80px',
-                }}
-                onMouseOver={(e) => {
-                  if (showNavigation) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                }}
-                onMouseOut={(e) => {
-                  if (showNavigation) e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <span style={{ fontSize: '20px' }}>🗺️</span>
-                <span style={{ fontSize: '12px', fontWeight: 500 }}>지도</span>
-              </button>
+  // 건물 마커 로드
+  function loadBuildingMarkers(map: any, buildings: BuildingData[]) {
+    const overlays: any[] = [];
 
-              {/* 길찾기 탭 */}
-              <button
-                onClick={() => setShowNavigation(true)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '8px 20px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: showNavigation ? 'rgba(255,255,255,0.2)' : 'transparent',
-                  color: colors.white,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  minWidth: '80px',
-                }}
-                onMouseOver={(e) => {
-                  if (!showNavigation) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                }}
-                onMouseOut={(e) => {
-                  if (!showNavigation) e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <span style={{ fontSize: '20px' }}>🧭</span>
-                <span style={{ fontSize: '12px', fontWeight: 500 }}>길찾기</span>
-              </button>
-            </div>
+    buildings.forEach((building) => {
+      const position = new window.kakao.maps.LatLng(building.lat, building.lon);
 
-            {/* Right: Action Buttons */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              {/* 이벤트 추가 */}
-              <button
-                onClick={() => setIsAddMode(!isAddMode)}
-                title="이벤트 추가"
-                style={{
-                  padding: '8px 12px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  background: isAddMode ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
-                  color: colors.white,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = isAddMode ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
-                }}
-              >
-                {isAddMode ? '✕ 취소' : '➕ 추가'}
-              </button>
-
-              {/* 목록 */}
-              <button
-                onClick={() => setShowSchedule(!showSchedule)}
-                title="이벤트 목록"
-                style={{
-                  padding: '8px 12px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  background: showSchedule ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
-                  color: colors.white,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = showSchedule ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
-                }}
-              >
-                📋 목록
-              </button>
-
-              {/* 구분선 */}
-              <div style={{
-                width: '1px',
-                height: '24px',
-                background: 'rgba(255,255,255,0.3)',
-                margin: '0 4px',
-              }} />
-
-              {/* 사용자 이름 */}
-              <span style={{
-                color: colors.white,
-                fontSize: '14px',
-                fontWeight: 500,
-                padding: '0 8px',
-              }}>
-                👤 {name}
-              </span>
-
-              {/* 관리자 페이지 */}
-              {currentUserInfo && currentUserInfo.role === "ADMIN" && (
-                <button
-                  onClick={() => navigate("/admin")}
-                  title="관리자 페이지"
-                  style={{
-                    padding: '8px 12px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    background: 'rgba(255,255,255,0.1)',
-                    color: colors.white,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                  }}
-                >
-                  🔧 관리자
-                </button>
-              )}
-
-              {/* 로그아웃 */}
-              <button
-                onClick={handleLogout}
-                title="로그아웃"
-                style={{
-                  padding: '8px 12px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  background: 'rgba(255,255,255,0.1)',
-                  color: colors.white,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                }}
-              >
-                🚪 로그아웃
-              </button>
-            </div>
+      const content = `
+        <div class="building-marker" data-building-name="${building.name}" style="
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: pointer;
+        ">
+          <div style="
+            position: relative;
+            background: #4285F4;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+          "
+          onmouseover="this.style.background='#1967D2'; this.style.transform='scale(1.05)';"
+          onmouseout="this.style.background='#4285F4'; this.style.transform='scale(1)';"
+          >
+            ${building.name}
           </div>
-        </Container>
-      </div>
-    );
+          <div style="
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #4285F4;
+            margin-top: -1px;
+          "></div>
+        </div>
+      `;
+
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position,
+        content,
+        yAnchor: 0.5,
+        clickable: true,
+      });
+
+      overlay.setMap(map);
+      overlays.push(overlay);
+    });
+
+    return overlays;
   }
+
+  // 건물 정보 오버레이 표시
+  const showBuildingInfo = (building: BuildingData) => {
+    if (!mapInstance || !window.kakao) return;
+
+    // 기존 오버레이 제거
+    if (buildingInfoOverlay) {
+      buildingInfoOverlay.setMap(null);
+    }
+
+    const position = new window.kakao.maps.LatLng(building.lat, building.lon);
+
+    const content = `
+      <div class="building-info-overlay" style="
+        position: relative;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 16px;
+        min-width: 280px;
+        max-width: 320px;
+        z-index: 10000;
+      ">
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #6366f1;
+        ">
+          <h3 style="
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+          ">${building.name}</h3>
+          <button onclick="document.querySelector('.building-info-overlay').remove()" style="
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+          ">×</button>
+        </div>
+        <p style="
+          margin: 0 0 12px 0;
+          font-size: 13px;
+          color: #475569;
+          line-height: 1.5;
+        ">충북대학교 ${building.name}</p>
+        ${building.floors && building.floors.length > 0 ? `
+          <div style="
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+          ">
+            <div style="
+              font-size: 14px;
+              font-weight: 600;
+              color: #4a6b5a;
+              margin-bottom: 8px;
+              padding-bottom: 6px;
+              border-bottom: 2px solid #4a6b5a;
+            ">층별안내</div>
+            ${building.floors.map((floor, idx) => `
+              <div style="margin: 4px 0;">
+                <div style="
+                  padding: 8px 12px;
+                  background: white;
+                  border-radius: 4px;
+                  font-size: 13px;
+                  color: #1e293b;
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  cursor: pointer;
+                  transition: background 0.2s;
+                "
+                onmouseover="this.style.background='#e8f5e9'"
+                onmouseout="this.style.background='white'"
+                onclick="
+                  var el = document.getElementById('floor-desc-${building.name}-${idx}');
+                  var icon = document.getElementById('floor-icon-${building.name}-${idx}');
+                  if (el.style.display === 'none') {
+                    el.style.display = 'block';
+                    icon.innerText = '▲';
+                  } else {
+                    el.style.display = 'none';
+                    icon.innerText = '▼';
+                  }
+                "
+                >
+                  <span>${floor.name}</span>
+                  <span id="floor-icon-${building.name}-${idx}" style="color: #94a3b8; font-size: 10px;">▼</span>
+                </div>
+                <div id="floor-desc-${building.name}-${idx}" style="
+                  display: none;
+                  padding: 8px 12px;
+                  background: #fff;
+                  border-top: 1px solid #f1f5f9;
+                  font-size: 12px;
+                  color: #64748b;
+                  line-height: 1.4;
+                ">
+                  ${floor.description}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        <button onclick="
+          const building = '${building.name}';
+          const lat = ${building.lat};
+          const lon = ${building.lon};
+          const url = 'https://map.kakao.com/link/to/' + encodeURIComponent(building) + ',' + lat + ',' + lon;
+          window.parent.postMessage({type: 'navigate', url: url}, '*');
+        " style="
+          width: 100%;
+          padding: 10px;
+          background: #FEE500;
+          color: #000000;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        ">
+          🗺️ 카카오맵으로 길찾기
+        </button>
+        <div style="
+          position: absolute;
+          bottom: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 10px solid transparent;
+          border-right: 10px solid transparent;
+          border-top: 10px solid white;
+        "></div>
+      </div>
+    `;
+
+    const overlay = new window.kakao.maps.CustomOverlay({
+      position,
+      content,
+      yAnchor: 1.3,
+      zIndex: 10000,
+    });
+
+    overlay.setMap(mapInstance);
+    setBuildingInfoOverlay(overlay);
+    setSelectedBuilding(building);
+  };
+
+  // 오버레이에서 길찾기 버튼 클릭 처리
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'navigate') {
+        setNavigationUrl(event.data.url);
+        setActiveTab('directions');
+        // 오버레이 닫기
+        if (buildingInfoOverlay) {
+          buildingInfoOverlay.setMap(null);
+          setBuildingInfoOverlay(null);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [buildingInfoOverlay]);
+
+  // 건물 마커 클릭 이벤트 리스너
+  useEffect(() => {
+    const handleBuildingClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const marker = target.closest('.building-marker');
+      if (marker) {
+        const buildingName = marker.getAttribute('data-building-name');
+        const building = campusBuildings.find(b => b.name === buildingName);
+        if (building) {
+          showBuildingInfo(building);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleBuildingClick);
+    return () => document.removeEventListener('click', handleBuildingClick);
+  }, [mapInstance]);
+
+  // activeTab 변경 시 건물 마커 표시/제거
+  useEffect(() => {
+    if (!mapInstance || campusBuildings.length === 0) return;
+
+    if (activeTab === 'building') {
+      // 건물 마커 표시
+      if (buildingOverlays.length === 0) {
+        const overlays = loadBuildingMarkers(mapInstance, campusBuildings);
+        setBuildingOverlays(overlays);
+      } else {
+        // 이미 생성된 오버레이 다시 표시
+        buildingOverlays.forEach(overlay => overlay.setMap(mapInstance));
+      }
+    } else {
+      // 건물 마커 숨기기
+      buildingOverlays.forEach(overlay => overlay.setMap(null));
+    }
+  }, [activeTab, mapInstance, campusBuildings]);
 
   const handleEventClickInSidebar = (event: EventDetail) => {
     setEventDetails(event);
@@ -827,8 +1007,22 @@ export default function CampusMap() {
         });
 
         setOverlays(newOverlays);
+        setEventOverlays(newOverlays);
       });
   }
+
+  // activeTab 변경 시 이벤트 마커 표시/제거
+  useEffect(() => {
+    if (!mapInstance) return;
+
+    if (activeTab === 'events') {
+      // 이벤트 마커 표시
+      eventOverlays.forEach(overlay => overlay.setMap(mapInstance));
+    } else {
+      // 이벤트 마커 숨기기
+      eventOverlays.forEach(overlay => overlay.setMap(null));
+    }
+  }, [activeTab, mapInstance, eventOverlays]);
 
   useEffect(() => {
     window.__openEventDetail = (id: number) => {
@@ -897,11 +1091,166 @@ export default function CampusMap() {
         position: "relative",
       }}
     >
-      {/* 🔹 챗봇 */}
+      {/* 챗봇 */}
       <ChatWidget />
 
-      {/* 헤더 */}
-      <NavBar name={localStorage.getItem("username")} />
+      {/* 상단 네비게이션 바 */}
+      <div style={{
+        background: 'linear-gradient(135deg, #4a6b5a 0%, #5a7b6a 100%)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        zIndex: 1000,
+        flexShrink: 0,
+      }}>
+        {/* 액션 버튼들 (events 탭일 때만 표시) */}
+        {activeTab === 'events' && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '8px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+          }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setShowSchedule(!showSchedule)}
+                style={{
+                  padding: '6px 14px',
+                  border: '1px solid rgba(255,255,255,0.6)',
+                  borderRadius: '16px',
+                  background: showSchedule ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                이벤트 목록
+              </button>
+              <button
+                onClick={() => setIsAddMode(!isAddMode)}
+                style={{
+                  padding: '6px 14px',
+                  border: '1px solid rgba(255,255,255,0.6)',
+                  borderRadius: '16px',
+                  background: isAddMode ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                {isAddMode ? '취소' : '이벤트 추가'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ color: colors.white, fontSize: '12px', fontWeight: 600 }}>{name}</span>
+              {currentUserInfo && currentUserInfo.role === "ADMIN" && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  style={{
+                    padding: '6px 14px',
+                    border: '1px solid rgba(255,255,255,0.6)',
+                    borderRadius: '16px',
+                    background: 'transparent',
+                    color: colors.white,
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  관리자
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: '6px 14px',
+                  border: '1px solid rgba(255,255,255,0.6)',
+                  borderRadius: '16px',
+                  background: 'transparent',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                로그아웃
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 탭 네비게이션 */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          padding: '12px 0',
+        }}>
+          {/* 건물/공간정보 탭 */}
+          <button
+            onClick={() => setActiveTab('building')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'transparent',
+              border: 'none',
+              color: activeTab === 'building' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+              cursor: 'pointer',
+              padding: '8px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ fontSize: '24px' }}>🏛️</div>
+            <span style={{ fontSize: '11px', fontWeight: 600 }}>건물/공간정보</span>
+          </button>
+
+          {/* 길찾기 탭 */}
+          <button
+            onClick={() => setActiveTab('directions')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'transparent',
+              border: 'none',
+              color: activeTab === 'directions' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+              cursor: 'pointer',
+              padding: '8px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ fontSize: '24px' }}>📍</div>
+            <span style={{ fontSize: '11px', fontWeight: 600 }}>길찾기</span>
+          </button>
+
+          {/* 행사/이벤트 탭 */}
+          <button
+            onClick={() => setActiveTab('events')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'transparent',
+              border: 'none',
+              color: activeTab === 'events' ? '#ffffff' : 'rgba(255,255,255,0.6)',
+              cursor: 'pointer',
+              padding: '8px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ fontSize: '24px' }}>🎁</div>
+            <span style={{ fontSize: '11px', fontWeight: 600 }}>행사/이벤트</span>
+          </button>
+        </div>
+      </div>
 
       <ScheduleSidebar
         show={showSchedule}
@@ -911,18 +1260,120 @@ export default function CampusMap() {
         t={t}
       />
 
+      {/* 건물 목록 사이드바 */}
+      {activeTab === 'building' && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          width: '320px',
+          height: '100vh',
+          background: colors.white,
+          boxShadow: shadows.lg,
+          zIndex: 999,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* 헤더 */}
+          <div style={{
+            padding: spacing.lg,
+            borderBottom: '1px solid #e5e7eb',
+            background: gradients.primary,
+          }}>
+            <h3 style={{
+              margin: 0,
+              color: colors.white,
+              fontSize: typography.fontSize.lg,
+              fontWeight: typography.fontWeight.bold,
+            }}>
+              건물/공간정보
+            </h3>
+          </div>
+
+          {/* 검색창 */}
+          <div style={{
+            padding: spacing.md,
+            borderBottom: '1px solid #e5e7eb',
+          }}>
+            <input
+              type="text"
+              placeholder="건물명 검색..."
+              value={buildingSearch}
+              onChange={(e) => setBuildingSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: spacing.sm,
+                border: '1px solid #cbd5e1',
+                borderRadius: borderRadius.sm,
+                fontSize: typography.fontSize.sm,
+              }}
+            />
+          </div>
+
+          {/* 건물 목록 */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: spacing.sm }}>
+            {campusBuildings               // 🔹 여기 CAMPUS_BUILDINGS → campusBuildings
+              .filter(building =>
+                building.name.toLowerCase().includes(buildingSearch.toLowerCase())
+              )
+              .map((building, index) => (
+                <div
+                  key={building.id ?? index}
+                  onClick={() => {
+                    showBuildingInfo(building);
+                    if (mapInstance && window.kakao) {
+                      const position = new window.kakao.maps.LatLng(building.lat, building.lon);
+                      mapInstance.panTo(position);
+                      mapInstance.setLevel(3);
+                    }
+                  }}
+                  style={{
+                    padding: spacing.md,
+                    borderBottom: '1px solid #e5e7eb',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = '#f1f5f9';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <span style={{
+                    fontSize: '18px',
+                    color: colors.primary,
+                  }}>
+                    📍
+                  </span>
+                  <span style={{
+                    fontSize: typography.fontSize.sm,
+                    fontWeight: typography.fontWeight.medium,
+                    color: '#1e293b',
+                  }}>
+                    {building.name}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* 지도 */}
       <div
         ref={mapRef}
         style={{
           flex: 1,
           width: "100%",
-          display: showNavigation ? 'none' : 'block'
+          display: activeTab === 'directions' ? 'none' : 'block'
         }}
       />
 
       {/* 카카오맵 길찾기 iframe */}
-      {showNavigation && (
+      {activeTab === 'directions' && (
         <iframe
           src={navigationUrl}
           style={{
@@ -936,7 +1387,7 @@ export default function CampusMap() {
 
       {/* 이벤트 추가 모드 안내 메시지 */}
       {
-        isAddMode && !showNavigation && (
+        isAddMode && (
           <div style={campusMapStyles.addModeGuide}>
             {t.main.add_guide}
           </div>
@@ -1276,39 +1727,37 @@ export default function CampusMap() {
               </div>
 
               {/* 길찾기 버튼 */}
-              <button
-                onClick={() => {
-                  const lat = eventDetails.lat;
-                  const lon = eventDetails.lon;
-                  const url = `https://map.kakao.com/link/to/${encodeURIComponent(eventDetails.title)},${lat},${lon}`;
-
-                  // Update navigation URL state and switch to navigation view
-                  setNavigationUrl(url);
-                  setShowNavigation(true);
-                  setEventDetails(null); // Close modal
-                }}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: 'none',
-                  borderRadius: borderRadius.md,
-                  background: '#FEE500',
-                  color: '#000000',
-                  fontSize: typography.fontSize.sm,
-                  fontWeight: typography.fontWeight.semibold,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  marginBottom: spacing.lg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: spacing.sm,
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#FDD835'}
-                onMouseOut={(e) => e.currentTarget.style.background = '#FEE500'}
-              >
-                길찾기
-              </button>
+              {(eventDetails as any).latitude && (eventDetails as any).longitude && (
+                <button
+                  onClick={() => {
+                    const lat = (eventDetails as any).latitude;
+                    const lng = (eventDetails as any).longitude;
+                    const url = `https://map.kakao.com/link/to/${encodeURIComponent(eventDetails.title)},${lat},${lng}`;
+                    window.open(url, '_blank');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: spacing.md,
+                    border: 'none',
+                    borderRadius: borderRadius.md,
+                    background: '#FEE500',
+                    color: '#000000',
+                    fontSize: typography.fontSize.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    marginBottom: spacing.lg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: spacing.sm,
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#FDD835'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#FEE500'}
+                >
+                  로 길찾기
+                </button>
+              )}
 
               {/* 수정/삭제 버튼 */}
               {canEditOrDelete(eventDetails) && (

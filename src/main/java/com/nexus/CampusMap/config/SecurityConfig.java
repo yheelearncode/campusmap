@@ -48,30 +48,6 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             
             // 2. 폼 로그인, HTTP Basic 비활성화
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
-
-            // 3. 세션 STATELESS 설정
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) 
-
-            // 4. 권한 부여 규칙 설정
-            .authorizeHttpRequests(authz -> authz
-            		.requestMatchers(HttpMethod.GET, "/api/events").permitAll()
-            		.requestMatchers(HttpMethod.GET, "/api/events/*/comments").permitAll()
-            		.requestMatchers(
-            		        "/api/users/login", "/api/users/signup",
-            		        "/api/auth/login", "/api/auth/signup",
-            		        "/uploads/**",  // 이미지 업로드 경로 허용
-            		        "/api/translate"  // 번역 API 허용
-            		    ).permitAll()
-            		    
-            		    .anyRequest().authenticated()
-            )
-            
-            // 5. JWT 필터를 Spring Security 체인에 추가 (addFilterBefore)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            
-            // 6. 모든 설정이 완료된 후 build()를 호출
             .build();
      
     }
