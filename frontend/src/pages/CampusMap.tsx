@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container';
-import Navbar from 'react-bootstrap/Navbar';
 
 import { ui_translations } from './constants/translations'
 import { useNavigate } from "react-router-dom";
@@ -33,7 +32,7 @@ interface EventDetail {
   endsAt?: string;
   lat: number;
   lon: number;
-
+  likes?: number;
   comments?: { user: string; content: string }[];
   imageUrl?: string;
   creatorId?: number;
@@ -169,6 +168,8 @@ export default function CampusMap() {
   const [isTranslating, setIsTranslating] = useState(false);
 
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showNavigation, setShowNavigation] = useState(false);
+  const [navigationUrl, setNavigationUrl] = useState("https://map.kakao.com");
 
   // ===========================
   // ⭐ 추가된 프로필 수정 state
@@ -548,136 +549,226 @@ export default function CampusMap() {
   // 네비게이션 바
   function NavBar({ name }: { name: string | null }) {
     return (
-      <Navbar
+      <div
         style={{
-          background: gradients.primary,
-          padding: `${spacing.md} ${spacing.xl}`,
-          boxShadow: shadows.lg,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
         }}
       >
         <Container fluid>
-          <Navbar.Brand style={{
-            color: colors.white,
-            fontWeight: typography.fontWeight.bold,
-            fontSize: typography.fontSize.xl,
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 0',
           }}>
-            <strong>{t.main.title}</strong>
-          </Navbar.Brand>
-          <Navbar.Collapse className="justify-content-end">
-            {/* 이벤트 목록 토글 */}
-            <button
-              onClick={() => setShowSchedule(!showSchedule)}
-              style={{
-                borderRadius: borderRadius.sm,
-                padding: `${spacing.xs} ${spacing.md}`,
-                fontWeight: typography.fontWeight.medium,
-                fontSize: typography.fontSize.sm,
-                border: `2px solid ${colors.white}`,
-                background: showSchedule ? 'rgba(255,255,255,0.25)' : 'transparent',
-                color: colors.white,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                marginRight: spacing.sm,
-              }}
-              onMouseOver={(e) => {
-                if (!showSchedule) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-              }}
-              onMouseOut={(e) => {
-                if (!showSchedule) e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              {t.main.event_list}
-            </button>
-
-            {/* 이벤트 추가 버튼 */}
-            <button
-              onClick={() => setIsAddMode(!isAddMode)}
-              style={{
-                borderRadius: borderRadius.sm,
-                padding: `${spacing.xs} ${spacing.md}`,
-                fontWeight: typography.fontWeight.semibold,
-                fontSize: typography.fontSize.sm,
-                border: `2px solid ${colors.white}`,
-                background: isAddMode ? 'rgba(255,255,255,0.25)' : 'transparent',
-                color: colors.white,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                marginRight: spacing.sm,
-              }}
-              onMouseOver={(e) => {
-                if (!isAddMode) e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-              }}
-              onMouseOut={(e) => {
-                if (!isAddMode) e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              {isAddMode ? t.main.cancel : t.main.add_event}
-            </button>
-
-            {/* 사용자 이름 */}
-            <span style={{
+            {/* Left: Brand */}
+            <div style={{
               color: colors.white,
-              fontWeight: typography.fontWeight.medium,
-              fontSize: typography.fontSize.sm,
-              marginLeft: spacing.lg,
-              marginRight: spacing.sm,
+              fontWeight: typography.fontWeight.bold,
+              fontSize: '18px',
+              letterSpacing: '0.5px',
             }}>
-              {name}
-            </span>
+              CBNU CAMPUSMAP
+            </div>
 
-            {/* 관리자 페이지 버튼 */}
-            {currentUserInfo && currentUserInfo.role === "ADMIN" && (
+            {/* Center: Main Navigation Tabs */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}>
+              {/* 지도 탭 */}
               <button
-                onClick={() => navigate("/admin")}
+                onClick={() => setShowNavigation(false)}
                 style={{
-                  borderRadius: borderRadius.sm,
-                  padding: `${spacing.xs} ${spacing.md}`,
-                  fontWeight: typography.fontWeight.medium,
-                  fontSize: typography.fontSize.sm,
-                  border: `2px solid ${colors.white}`,
-                  background: 'transparent',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '8px 20px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: !showNavigation ? 'rgba(255,255,255,0.2)' : 'transparent',
                   color: colors.white,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  marginRight: spacing.sm,
+                  minWidth: '80px',
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                  if (showNavigation) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.background = 'transparent';
+                  if (showNavigation) e.currentTarget.style.background = 'transparent';
                 }}
               >
-                관리자 페이지
+                <span style={{ fontSize: '20px' }}>🗺️</span>
+                <span style={{ fontSize: '12px', fontWeight: 500 }}>지도</span>
               </button>
-            )}
 
-            {/* 로그아웃 버튼 */}
-            <button
-              onClick={handleLogout}
-              style={{
-                borderRadius: borderRadius.sm,
-                padding: `${spacing.xs} ${spacing.md}`,
-                fontWeight: typography.fontWeight.medium,
-                fontSize: typography.fontSize.sm,
-                border: `2px solid ${colors.white}`,
-                background: 'transparent',
+              {/* 길찾기 탭 */}
+              <button
+                onClick={() => setShowNavigation(true)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '8px 20px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: showNavigation ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  minWidth: '80px',
+                }}
+                onMouseOver={(e) => {
+                  if (!showNavigation) e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+                onMouseOut={(e) => {
+                  if (!showNavigation) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>🧭</span>
+                <span style={{ fontSize: '12px', fontWeight: 500 }}>길찾기</span>
+              </button>
+            </div>
+
+            {/* Right: Action Buttons */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}>
+              {/* 이벤트 추가 */}
+              <button
+                onClick={() => setIsAddMode(!isAddMode)}
+                title="이벤트 추가"
+                style={{
+                  padding: '8px 12px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: isAddMode ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = isAddMode ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
+                }}
+              >
+                {isAddMode ? '✕ 취소' : '➕ 추가'}
+              </button>
+
+              {/* 목록 */}
+              <button
+                onClick={() => setShowSchedule(!showSchedule)}
+                title="이벤트 목록"
+                style={{
+                  padding: '8px 12px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: showSchedule ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = showSchedule ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
+                }}
+              >
+                📋 목록
+              </button>
+
+              {/* 구분선 */}
+              <div style={{
+                width: '1px',
+                height: '24px',
+                background: 'rgba(255,255,255,0.3)',
+                margin: '0 4px',
+              }} />
+
+              {/* 사용자 이름 */}
+              <span style={{
                 color: colors.white,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              {t.main.logout}
-            </button>
-          </Navbar.Collapse>
+                fontSize: '14px',
+                fontWeight: 500,
+                padding: '0 8px',
+              }}>
+                👤 {name}
+              </span>
+
+              {/* 관리자 페이지 */}
+              {currentUserInfo && currentUserInfo.role === "ADMIN" && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  title="관리자 페이지"
+                  style={{
+                    padding: '8px 12px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: colors.white,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                  }}
+                >
+                  🔧 관리자
+                </button>
+              )}
+
+              {/* 로그아웃 */}
+              <button
+                onClick={handleLogout}
+                title="로그아웃"
+                style={{
+                  padding: '8px 12px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: colors.white,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+              >
+                🚪 로그아웃
+              </button>
+            </div>
+          </div>
         </Container>
-      </Navbar>
+      </div>
     );
   }
 
@@ -821,11 +912,31 @@ export default function CampusMap() {
       />
 
       {/* 지도 */}
-      <div ref={mapRef} style={{ flex: 1, width: "100%" }} />
+      <div
+        ref={mapRef}
+        style={{
+          flex: 1,
+          width: "100%",
+          display: showNavigation ? 'none' : 'block'
+        }}
+      />
+
+      {/* 카카오맵 길찾기 iframe */}
+      {showNavigation && (
+        <iframe
+          src={navigationUrl}
+          style={{
+            flex: 1,
+            width: '100%',
+            border: 'none'
+          }}
+          title="Kakao Map Navigation"
+        />
+      )}
 
       {/* 이벤트 추가 모드 안내 메시지 */}
       {
-        isAddMode && (
+        isAddMode && !showNavigation && (
           <div style={campusMapStyles.addModeGuide}>
             {t.main.add_guide}
           </div>
@@ -1165,35 +1276,39 @@ export default function CampusMap() {
               </div>
 
               {/* 길찾기 버튼 */}
-              {eventDetails.latitude && eventDetails.longitude && (
-                <button
-                  onClick={() => {
-                    const url = `https://map.kakao.com/link/to/${encodeURIComponent(eventDetails.title)},${eventDetails.latitude},${eventDetails.longitude}`;
-                    window.open(url, '_blank');
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: spacing.md,
-                    border: 'none',
-                    borderRadius: borderRadius.md,
-                    background: '#FEE500',
-                    color: '#000000',
-                    fontSize: typography.fontSize.sm,
-                    fontWeight: typography.fontWeight.semibold,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    marginBottom: spacing.lg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: spacing.sm,
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#FDD835'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#FEE500'}
-                >
-                  🗺️ 카카오맵으로 길찾기
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  const lat = eventDetails.lat;
+                  const lon = eventDetails.lon;
+                  const url = `https://map.kakao.com/link/to/${encodeURIComponent(eventDetails.title)},${lat},${lon}`;
+
+                  // Update navigation URL state and switch to navigation view
+                  setNavigationUrl(url);
+                  setShowNavigation(true);
+                  setEventDetails(null); // Close modal
+                }}
+                style={{
+                  width: '100%',
+                  padding: spacing.md,
+                  border: 'none',
+                  borderRadius: borderRadius.md,
+                  background: '#FEE500',
+                  color: '#000000',
+                  fontSize: typography.fontSize.sm,
+                  fontWeight: typography.fontWeight.semibold,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  marginBottom: spacing.lg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: spacing.sm,
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#FDD835'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#FEE500'}
+              >
+                길찾기
+              </button>
 
               {/* 수정/삭제 버튼 */}
               {canEditOrDelete(eventDetails) && (
@@ -1790,7 +1905,7 @@ export default function CampusMap() {
                 닫기
               </button>
             </div>
-          </div>
+          </div >
         )
       }
     </div >
