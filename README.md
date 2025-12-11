@@ -47,6 +47,9 @@
 | 이현승 | [이현승](study/Hyunseong/) |
 | Batkhishig | [Batkhishig](study/Batkhishgig/) |
 
+## 팀 프로젝트 Notion 일지
+[(https://www.notion.so/9040/campus-map-2c0ba49a995f800395bdc5e350f3fb48?source=copy_link)]
+
 ## 프로젝트 시연 동영상
 - **YouTube Link**: [(https://www.youtube.com/watch?v=iBgV2MzA5lo)]
 - **File**: Demo 폴더 내 `demo_video.mp4` 참조
